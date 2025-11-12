@@ -428,6 +428,9 @@
         let selectedColumn = 0;
         let finalSchedule = null;
         
+        // 🚀 경로 캐시 추가 (속도 개선)
+        const routeCache = new Map();
+        
         const dayColors = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
             '#F06292', '#BA68C8', '#9575CD', '#7986CB', '#64B5F6',
@@ -659,6 +662,8 @@
                 return;
             }
             
+            console.log(`🚀 경로 캐시: ${routeCache.size}개 저장됨`);
+            
             document.getElementById('optimizeProgress').style.display = 'block';
             document.getElementById('optimizeBtn').disabled = true;
             
@@ -828,7 +833,7 @@
                 });
                 
                 console.log(`  ${group.name}: ${routeInfo.distance.toFixed(1)}km (${routeInfo.duration}분)`);
-                await sleep(100);
+                // sleep 제거 - 캐싱으로 충분히 빠름
             }
             
             return result;
@@ -886,37 +891,57 @@
                     document.getElementById('optimizeDetail').textContent = 
                         `${totalProcessed}/${totalCount}개 완료 | ${group.name} 내 ${remainingInGroup.length}개 남음`;
                     
+                    // 🚀 속도 개선: 직선 거리로 사전 필터링
+                    const candidates = remainingInGroup
+                        .map((loc, idx) => {
+                            const lat = parseFloat(loc[loc.length - 2]);
+                            const lng = parseFloat(loc[loc.length - 1]);
+                            
+                            if (isNaN(lat) || isNaN(lng)) return null;
+                            
+                            const straightDist = calculateDistance(
+                                parseFloat(currentPosition.y), parseFloat(currentPosition.x),
+                                lat, lng
+                            );
+                            
+                            return { idx, loc, lat, lng, straightDist };
+                        })
+                        .filter(c => c !== null)
+                        .sort((a, b) => a.straightDist - b.straightDist)
+                        .slice(0, Math.min(5, remainingInGroup.length)); // 가까운 5개만 선택
+                    
+                    if (candidates.length === 0) {
+                        console.error(`  ❌ ${group.name}에서 유효한 경로 없음`);
+                        break;
+                    }
+                    
+                    // 🚀 선택된 후보들만 API 호출 (병렬 처리)
                     let nearestIdx = -1;
                     let minDuration = Infinity;
                     let nearestDistance = 0;
                     
-                    for (let i = 0; i < remainingInGroup.length; i++) {
-                        const loc = remainingInGroup[i];
-                        const lat = parseFloat(loc[loc.length - 2]);
-                        const lng = parseFloat(loc[loc.length - 1]);
-                        
-                        if (isNaN(lat) || isNaN(lng)) continue;
-                        
-                        const routeInfo = await getKakaoRoute(currentPosition.y, currentPosition.x, lat, lng);
-                        
-                        if (routeInfo.duration < minDuration) {
-                            minDuration = routeInfo.duration;
-                            nearestDistance = routeInfo.distance;
-                            nearestIdx = i;
+                    const routePromises = candidates.map(async (candidate) => {
+                        const routeInfo = await getKakaoRoute(
+                            currentPosition.y, currentPosition.x, 
+                            candidate.lat, candidate.lng
+                        );
+                        return { ...candidate, routeInfo };
+                    });
+                    
+                    const routeResults = await Promise.all(routePromises);
+                    
+                    // 가장 가까운 것 선택
+                    for (const result of routeResults) {
+                        if (result.routeInfo.duration < minDuration) {
+                            minDuration = result.routeInfo.duration;
+                            nearestDistance = result.routeInfo.distance;
+                            nearestIdx = result.idx;
                         }
-                        
-                        await sleep(100);
                     }
                     
                     if (nearestIdx === -1) {
                         console.error(`  ❌ ${group.name}에서 유효한 경로 없음`);
-                        remainingInGroup = remainingInGroup.filter(loc => {
-                            const lat = parseFloat(loc[loc.length - 2]);
-                            const lng = parseFloat(loc[loc.length - 1]);
-                            return !isNaN(lat) && !isNaN(lng);
-                        });
-                        if (remainingInGroup.length === 0) break;
-                        continue;
+                        break;
                     }
                     
                     const nearest = remainingInGroup[nearestIdx];
@@ -1020,7 +1045,7 @@
             
             let changed = true;
             let iterations = 0;
-            const maxIterations = 5;
+            const maxIterations = 3;  // 5 → 3으로 줄임
             
             while (changed && iterations < maxIterations) {
                 changed = false;
@@ -1078,7 +1103,8 @@
                 }
             }
             
-            console.log(`재조정 완료: ${schedule.length}일 일정`);
+            console.log(`\n재조정 완료: ${schedule.length}일 일정`);
+            console.log(`📊 캐시 히트: ${routeCache.size}개 경로 저장됨`);
             return schedule;
         }
         
@@ -1107,37 +1133,46 @@
             let currentPos = start;
             
             while (remaining.length > 0) {
-                let nearestIdx = 0;
-                let minDistance = Infinity;
-                let bestRouteInfo = null;
+                // 🚀 직선 거리로 가까운 5개만 선택
+                const candidates = remaining
+                    .map((visit, idx) => {
+                        const straightDist = calculateDistance(
+                            parseFloat(currentPos.y), parseFloat(currentPos.x),
+                            parseFloat(visit.lat), parseFloat(visit.lng)
+                        );
+                        return { idx, visit, straightDist };
+                    })
+                    .sort((a, b) => a.straightDist - b.straightDist)
+                    .slice(0, Math.min(5, remaining.length));
                 
-                // 모든 남은 방문지에 대해 거리 계산
-                for (let i = 0; i < remaining.length; i++) {
+                // 🚀 병렬로 경로 계산
+                const routePromises = candidates.map(async (candidate) => {
                     const route = await getKakaoRoute(
                         parseFloat(currentPos.y), 
                         parseFloat(currentPos.x),
-                        parseFloat(remaining[i].lat), 
-                        parseFloat(remaining[i].lng)
+                        parseFloat(candidate.visit.lat), 
+                        parseFloat(candidate.visit.lng)
                     );
-                    
-                    if (route.distance < minDistance) {
-                        minDistance = route.distance;
-                        nearestIdx = i;
-                        bestRouteInfo = route;
+                    return { ...candidate, route };
+                });
+                
+                const routeResults = await Promise.all(routePromises);
+                
+                // 가장 가까운 것 선택
+                let bestResult = routeResults[0];
+                for (const result of routeResults) {
+                    if (result.route.distance < bestResult.route.distance) {
+                        bestResult = result;
                     }
-                    
-                    await sleep(50);
                 }
                 
-                const nearest = remaining.splice(nearestIdx, 1)[0];
+                const nearest = remaining.splice(bestResult.idx, 1)[0];
                 
                 // 거리/시간 업데이트
-                if (bestRouteInfo) {
-                    nearest.distance = bestRouteInfo.distance.toFixed(2);
-                    nearest.travelTime = bestRouteInfo.duration.toFixed(0);
-                    const avgStay = parseInt(document.getElementById('avgStay').value) || 30;
-                    nearest.time = (bestRouteInfo.duration + avgStay).toFixed(0);
-                }
+                nearest.distance = bestResult.route.distance.toFixed(2);
+                nearest.travelTime = bestResult.route.duration.toFixed(0);
+                const avgStay = parseInt(document.getElementById('avgStay').value) || 30;
+                nearest.time = (bestResult.route.duration + avgStay).toFixed(0);
                 
                 ordered.push(nearest);
                 currentPos = { y: nearest.lat, x: nearest.lng };
@@ -1147,6 +1182,26 @@
         }
         
         async function getKakaoRoute(startLat, startLng, endLat, endLng) {
+            // 🔧 타입 안전성: 숫자로 변환
+            startLat = parseFloat(startLat);
+            startLng = parseFloat(startLng);
+            endLat = parseFloat(endLat);
+            endLng = parseFloat(endLng);
+            
+            // 유효성 검사
+            if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
+                console.error('Invalid coordinates:', { startLat, startLng, endLat, endLng });
+                return { duration: 0, distance: 0 };
+            }
+            
+            // 🚀 캐시 키 생성 (소수점 4자리로 반올림)
+            const cacheKey = `${startLat.toFixed(4)},${startLng.toFixed(4)}-${endLat.toFixed(4)},${endLng.toFixed(4)}`;
+            
+            // 캐시에 있으면 즉시 반환
+            if (routeCache.has(cacheKey)) {
+                return routeCache.get(cacheKey);
+            }
+            
             try {
                 const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${startLng},${startLat}&destination=${endLng},${endLat}&priority=RECOMMEND`;
                 const response = await fetch(url, {
@@ -1157,19 +1212,43 @@
                     const data = await response.json();
                     if (data.routes && data.routes.length > 0) {
                         const route = data.routes[0];
-                        return {
+                        const result = {
                             duration: Math.round(route.summary.duration / 60),
                             distance: route.summary.distance / 1000
                         };
+                        
+                        // 캐시에 저장
+                        routeCache.set(cacheKey, result);
+                        return result;
                     }
                 }
-            } catch (error) {}
+            } catch (error) {
+                console.warn('Route API error:', error);
+            }
             
+            // API 실패 시 직선 거리로 추정
             const distance = calculateDistance(startLat, startLng, endLat, endLng);
-            return { duration: Math.round((distance / 40) * 60), distance };
+            const result = { 
+                duration: Math.round((distance / 40) * 60), 
+                distance 
+            };
+            
+            // 추정값도 캐시에 저장
+            routeCache.set(cacheKey, result);
+            return result;
         }
         
         function calculateDistance(lat1, lon1, lat2, lon2) {
+            // 🔧 타입 안전성: 숫자로 변환
+            lat1 = parseFloat(lat1);
+            lon1 = parseFloat(lon1);
+            lat2 = parseFloat(lat2);
+            lon2 = parseFloat(lon2);
+            
+            if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+                return 0;
+            }
+            
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;

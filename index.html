@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>출장 경로 최적화</title>
+    <title>출장 계획 수립 업무 자동화 프롬프트</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=0c62e9a12c740ee7f1620f92ec4659bf&libraries=services"></script>
     <style>
@@ -15,7 +15,7 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #b8e0f6 0%, #d4f0e8 50%, #e8f5d8 100%);
+            background: linear-gradient(135deg, #e3f2fd 0%, #f0f9ff 50%, #f5fffa 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -289,13 +289,30 @@
             height: 20px;
             border-radius: 4px;
         }
+        
+        .footer {
+            background: #6c757d;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+        
+        .footer a {
+            color: #5ec9ff;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚗 출장 경로 최적화 시스템</h1>
-            <p>엑셀 파일을 업로드하여 최적의 방문 경로를 계획하세요</p>
+            <h1>🚗 따라와</h1>
+            <p>출장 계획 수립 업무 자동화 프롬프트</p>
         </div>
         
         <div class="content">
@@ -364,7 +381,7 @@
                 </div>
                 <div class="input-group">
                     <label>출발지 주소</label>
-                    <input type="text" id="startAddress" value="경기도 성남시 장미로 42">
+                    <input type="text" id="startAddress" value="경기도 성남시 분당구 장미로 42">
                 </div>
                 <button id="optimizeBtn" onclick="optimizeRoute()" disabled>🎯 경로 최적화 실행</button>
                 <div id="optimizeStatus"></div>
@@ -385,12 +402,19 @@
                 <div id="scheduleButtons" style="display: none; margin-bottom: 15px;">
                     <button onclick="downloadScheduleExcel()">📥 일정 파일 다운로드</button>
                 </div>
+                <!-- 일차별 색상 표기 숨김
                 <div id="legendSection" style="display: none;">
                     <div class="legend" id="legend"></div>
                 </div>
+                -->
                 <div id="routeResult"></div>
                 <div id="map"></div>
             </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2025 따라와. All rights reserved.</p>
+            <p>Developed by <strong>BTS</strong> (Business Trip Secretary)</p>
         </div>
     </div>
 
@@ -419,16 +443,19 @@
             kakao.maps.load(function() {
                 geocoder = new kakao.maps.services.Geocoder();
                 initMap();
-                testGeocoderAPI();
+                // testGeocoderAPI();
+                showStatus('uploadStatus', '📂 엑셀 파일을 업로드해주세요.', 'info');
             });
         };
         
+        /*
         async function testGeocoderAPI() {
             const result = await geocodeAddress('경기 광주시 곤지암읍 만삼로 103-7');
             if (result) {
                 showStatus('uploadStatus', `✅ API 연결 성공! 파일을 업로드해주세요.`, 'success');
             }
         }
+        */
         
         function initMap() {
             const container = document.getElementById('map');
@@ -666,7 +693,7 @@
             document.getElementById('optimizeProgress').style.display = 'none';
             displaySchedule(schedule);
             displayMarkersOnMap(schedule, startPoint);
-            displayLegend(schedule);
+            // displayLegend(schedule);
             document.getElementById('scheduleButtons').style.display = 'block';
             
             showStatus('optimizeStatus', '✅ 최적화 완료!', 'success');
@@ -1185,6 +1212,7 @@
             document.getElementById('routeResult').innerHTML = html;
         }
         
+        /*
         function displayLegend(schedule) {
             let html = '<strong>📍 일차별 색상:</strong>';
             schedule.forEach(day => {
@@ -1199,6 +1227,7 @@
             document.getElementById('legend').innerHTML = html;
             document.getElementById('legendSection').style.display = 'block';
         }
+        */
         
         function displayMarkersOnMap(schedule, start) {
             if (!map) return;
@@ -1366,29 +1395,76 @@
         function downloadScheduleExcel() {
             if (!finalSchedule || !convertedData) return;
             
+            console.log('\n📥 === 일정 파일 다운로드 시작 ===');
+            console.log(`convertedData 행 수: ${convertedData.length} (헤더 포함)`);
+            console.log(`데이터 행 수: ${convertedData.length - 1}`);
+            
+            // 원본 데이터 복사 (행 순서 유지)
             const scheduleData = convertedData.map(row => [...row]);
+            
+            // 헤더에 "일정" 열 추가
             scheduleData[0].push('일정');
             
+            // 일정 매핑 생성
             const scheduleMap = new Map();
+            const usedRows = new Set();  // 이미 사용된 행 추적
+            let totalScheduledVisits = 0;
+            
             finalSchedule.forEach(day => {
                 day.visits.forEach((visit, idx) => {
+                    totalScheduledVisits++;
+                    
+                    // 원본 데이터의 행 번호 찾기 (위도/경도로 매칭, 아직 사용되지 않은 행만)
                     for (let i = 1; i < convertedData.length; i++) {
+                        // 이미 사용된 행은 스킵
+                        if (usedRows.has(i)) continue;
+                        
                         const row = convertedData[i];
                         const rowLat = parseFloat(row[row.length - 2]);
                         const rowLng = parseFloat(row[row.length - 1]);
                         
+                        if (isNaN(rowLat) || isNaN(rowLng)) continue;
+                        
                         if (Math.abs(rowLat - visit.lat) < 0.0001 && 
                             Math.abs(rowLng - visit.lng) < 0.0001) {
-                            scheduleMap.set(i, `Day${day.day}-${idx + 1}`);
+                            
+                            const scheduleLabel = `Day${day.day}-${idx + 1}`;
+                            scheduleMap.set(i, scheduleLabel);
+                            usedRows.add(i);  // 사용된 행으로 표시
+                            console.log(`  매칭: 행${i} → ${scheduleLabel} (${visit.address?.substring(0, 30)}...)`);
                             break;
                         }
                     }
                 });
             });
             
+            console.log(`\n총 스케줄된 방문: ${totalScheduledVisits}개`);
+            console.log(`매칭된 행: ${scheduleMap.size}개`);
+            
+            if (totalScheduledVisits !== scheduleMap.size) {
+                console.warn(`⚠️ 매칭 누락: ${totalScheduledVisits - scheduleMap.size}개`);
+            }
+            
+            // 원본 순서대로 일정 정보 추가
+            let addedCount = 0;
             for (let i = 1; i < scheduleData.length; i++) {
                 const scheduleLabel = scheduleMap.get(i) || '';
                 scheduleData[i].push(scheduleLabel);
+                if (scheduleLabel) {
+                    addedCount++;
+                }
+            }
+            
+            console.log(`일정이 추가된 행: ${addedCount}개`);
+            console.log(`처리된 전체 행: ${scheduleData.length - 1}개 (헤더 제외)`);
+            
+            // 마지막 몇 행 확인
+            console.log('\n마지막 5개 행 확인:');
+            for (let i = Math.max(1, scheduleData.length - 5); i < scheduleData.length; i++) {
+                const row = scheduleData[i];
+                const scheduleCol = row[row.length - 1];
+                const address = row[selectedColumn]?.substring(0, 30) || '주소없음';
+                console.log(`  행${i}: 일정="${scheduleCol}" | 주소="${address}"`);
             }
             
             const ws = XLSX.utils.aoa_to_sheet(scheduleData);
@@ -1396,7 +1472,7 @@
             XLSX.utils.book_append_sheet(wb, ws, '일정표');
             XLSX.writeFile(wb, '출장일정_' + new Date().toISOString().slice(0,10) + '.xlsx');
             
-            console.log('✅ 일정 파일 다운로드 완료');
+            console.log('\n✅ 일정 파일 다운로드 완료');
         }
     </script>
 </body>

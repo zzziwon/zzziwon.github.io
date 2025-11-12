@@ -532,38 +532,72 @@
             const dataRows = uploadedData.slice(1);
             document.getElementById('totalCount').textContent = dataRows.length;
             
-            for (let i = 0; i < dataRows.length; i++) {
-                const row = dataRows[i];
-                const address = row[selectedColumn];
+            console.log(`\n🚀 === 주소 변환 시작 (${dataRows.length}개) ===`);
+            const startTime = Date.now();
+            
+            // 🚀 배치 크기 설정 (한 번에 처리할 개수)
+            const BATCH_SIZE = 3;
+            const BATCH_DELAY = 100; // 배치 간 딜레이 (ms)
+            
+            for (let batchStart = 0; batchStart < dataRows.length; batchStart += BATCH_SIZE) {
+                const batchEnd = Math.min(batchStart + BATCH_SIZE, dataRows.length);
+                const batch = dataRows.slice(batchStart, batchEnd);
                 
-                document.getElementById('currentAddress').innerHTML = 
-                    `🔄 (${i + 1}/${dataRows.length}): <strong>${address || '빈 값'}</strong>`;
-                
-                if (!address) {
-                    convertedData.push([...row, '', '']);
-                    failCount++;
-                } else {
+                // 🚀 배치 내에서 병렬 처리
+                const batchPromises = batch.map(async (row, batchIndex) => {
+                    const i = batchStart + batchIndex;
+                    const address = row[selectedColumn];
+                    
+                    document.getElementById('currentAddress').innerHTML = 
+                        `🔄 (${i + 1}/${dataRows.length}): <strong>${address || '빈 값'}</strong>`;
+                    
+                    if (!address) {
+                        return { row, result: null };
+                    }
+                    
                     const result = await geocodeAddress(address);
-                    if (result) {
+                    return { row, result };
+                });
+                
+                // 배치 완료 대기
+                const batchResults = await Promise.all(batchPromises);
+                
+                // 결과 저장
+                batchResults.forEach(({ row, result }) => {
+                    if (!row[selectedColumn]) {
+                        convertedData.push([...row, '', '']);
+                        failCount++;
+                    } else if (result) {
                         convertedData.push([...row, result.y, result.x]);
                         successCount++;
                     } else {
                         convertedData.push([...row, '변환 실패', '변환 실패']);
                         failCount++;
                     }
-                }
+                });
                 
+                // 진행률 업데이트
                 document.getElementById('successCount').textContent = successCount;
                 document.getElementById('failCount').textContent = failCount;
                 
-                const progress = Math.round(((i + 1) / dataRows.length) * 100);
+                const progress = Math.round(((batchEnd) / dataRows.length) * 100);
                 document.getElementById('progressFill').style.width = progress + '%';
                 document.getElementById('progressFill').textContent = progress + '%';
                 
-                await sleep(300);
+                // 배치 간 딜레이 (API 제한 방지)
+                if (batchEnd < dataRows.length) {
+                    await sleep(BATCH_DELAY);
+                }
             }
             
-            showStatus('uploadStatus', `✅ 완료! ${successCount}/${dataRows.length}개 성공`, 'success');
+            const endTime = Date.now();
+            const totalSeconds = ((endTime - startTime) / 1000).toFixed(1);
+            
+            console.log(`✅ 변환 완료: ${totalSeconds}초 소요`);
+            console.log(`   성공: ${successCount}개, 실패: ${failCount}개`);
+            console.log(`   평균: ${(totalSeconds / dataRows.length).toFixed(2)}초/개`);
+            
+            showStatus('uploadStatus', `✅ 완료! ${successCount}/${dataRows.length}개 성공 (${totalSeconds}초)`, 'success');
             document.getElementById('downloadBtn').disabled = false;
             document.getElementById('optimizeBtn').disabled = false;
             document.getElementById('convertBtn').disabled = false;
@@ -846,7 +880,12 @@
             let currentPosition = start;
             let totalProcessed = 0;
             
+            // 🆕 0.3시간(18분) 여유 추가
+            const maxMinutes = (maxHours + 0.3) * 60;
+            
             console.log(`\n🎯 === 그룹별 Greedy 최적화 시작 ===`);
+            console.log(`일일 최대 업무시간: ${maxHours}시간 + 0.3시간 = ${(maxHours + 0.3).toFixed(1)}시간 (${maxMinutes.toFixed(0)}분)`);
+            console.log(`일일 최대 방문: ${maxVisits}개`);
             
             for (let groupIdx = 0; groupIdx < orderedGroups.length; groupIdx++) {
                 const group = orderedGroups[groupIdx];
@@ -860,7 +899,7 @@
                 while (remainingInGroup.length > 0) {
                     const capacity = maxVisits - currentDayVisits.length;
                     const currentTime = currentDayVisits.reduce((s, v) => s + parseFloat(v.time), 0);
-                    const remainTime = (maxHours * 60) - currentTime;
+                    const remainTime = maxMinutes - currentTime;
                     
                     if (capacity === 0 || (remainTime < 30 && currentDayVisits.length > 0)) {
                         if (currentDayVisits.length > 0) {
@@ -974,8 +1013,8 @@
                         continue;
                     }
                     
-                    if (newTotalTime > maxHours * 60 && currentDayVisits.length > 0) {
-                        console.log(`  ⏰ 시간 초과, 다음 날로`);
+                    if (newTotalTime > maxMinutes && currentDayVisits.length > 0) {
+                        console.log(`  ⏰ 시간 초과 (${(newTotalTime/60).toFixed(1)}h > ${(maxMinutes/60).toFixed(1)}h), 다음 날로`);
                         
                         const firstVisit = currentDayVisits[0];
                         const lastVisit = currentDayVisits[currentDayVisits.length - 1];
@@ -1041,73 +1080,164 @@
         
         async function rebalanceSchedule(schedule, maxVisits, start) {
             const threshold = Math.floor(maxVisits * 0.5);
+            console.log(`\n🔄 === 일정 재조정 시작 ===`);
             console.log(`재조정 기준: ${threshold}개 이하`);
+            console.log(`현재 일정: ${schedule.length}일`);
+            
+            // 각 날짜의 방문 수 출력
+            schedule.forEach(day => {
+                const status = day.visits.length <= threshold ? '❗재조정 대상' : '✅정상';
+                console.log(`  ${day.day}일차: ${day.visits.length}개 ${status}`);
+            });
             
             let changed = true;
             let iterations = 0;
-            const maxIterations = 3;  // 5 → 3으로 줄임
+            const maxIterations = 5;
             
             while (changed && iterations < maxIterations) {
                 changed = false;
                 iterations++;
-                console.log(`\n재조정 반복 ${iterations}회`);
+                console.log(`\n🔄 재조정 ${iterations}회차 시작`);
                 
-                for (let i = 0; i < schedule.length; i++) {
-                    const day = schedule[i];
+                // 재조정 대상 찾기 (방문 수가 적은 순으로 정렬)
+                const sortedDays = schedule
+                    .map((day, idx) => ({ day, originalIdx: idx }))
+                    .filter(item => item.day.visits.length <= threshold)
+                    .sort((a, b) => a.day.visits.length - b.day.visits.length);
+                
+                if (sortedDays.length === 0) {
+                    console.log('  ✅ 재조정 대상 없음');
+                    break;
+                }
+                
+                console.log(`  재조정 대상: ${sortedDays.length}일`);
+                
+                for (const { day: sourceDay, originalIdx: sourceIdx } of sortedDays) {
+                    console.log(`\n  📌 ${sourceDay.day}일차 처리 (${sourceDay.visits.length}개)`);
                     
-                    // 50% 미만인 날 찾기
-                    if (day.visits.length > threshold) continue;
+                    // 소스 날짜의 중심점 계산
+                    const sourceCenter = calculateCenter(sourceDay.visits);
                     
-                    console.log(`  ${day.day}일차: ${day.visits.length}개 (< ${threshold}개) - 재조정 대상`);
+                    // 병합 가능한 날 찾기
+                    let bestTarget = null;
+                    let bestDistance = Infinity;
                     
-                    // 다른 날들과 병합 시도
                     for (let j = 0; j < schedule.length; j++) {
-                        if (i === j) continue;
+                        if (j === sourceIdx) continue;
                         
                         const targetDay = schedule[j];
-                        if (targetDay.visits.length >= maxVisits) continue;
                         
-                        // 두 날의 방문지들이 20km 이내인지 확인
-                        const canMerge = checkMergeableDays(day, targetDay);
+                        // 용량 체크
+                        if (targetDay.visits.length + sourceDay.visits.length > maxVisits) {
+                            console.log(`    ⏭️ ${targetDay.day}일차: 용량 초과 (${targetDay.visits.length} + ${sourceDay.visits.length} > ${maxVisits})`);
+                            continue;
+                        }
                         
-                        if (canMerge && (day.visits.length + targetDay.visits.length) <= maxVisits) {
-                            console.log(`    → ${targetDay.day}일차와 병합 가능 (총 ${day.visits.length + targetDay.visits.length}개)`);
+                        // 타겟 날짜의 중심점 계산
+                        const targetCenter = calculateCenter(targetDay.visits);
+                        
+                        // 중심점 간 거리
+                        const centerDistance = calculateDistance(
+                            sourceCenter.lat, sourceCenter.lng,
+                            targetCenter.lat, targetCenter.lng
+                        );
+                        
+                        console.log(`    📍 ${targetDay.day}일차: 중심점 거리 ${centerDistance.toFixed(1)}km (용량: ${targetDay.visits.length}/${maxVisits})`);
+                        
+                        // 중심점이 30km 이내이고 가장 가까운 날 선택
+                        if (centerDistance <= 30 && centerDistance < bestDistance) {
+                            // 실제 거리로 재확인 (가장 먼 두 지점 간 거리)
+                            const maxPairDistance = getMaxPairDistance(sourceDay.visits, targetDay.visits);
                             
-                            // 병합
-                            targetDay.visits.push(...day.visits);
-                            
-                            // 병합된 날을 최적화 (가까운 순서로 재정렬)
-                            targetDay.visits = await reorderVisits(targetDay.visits, start);
-                            
-                            // 출발/귀가 시간 재계산
-                            const firstVisit = targetDay.visits[0];
-                            const lastVisit = targetDay.visits[targetDay.visits.length - 1];
-                            const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
-                            const toStart = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
-                            targetDay.departureTime = toFirst.duration;
-                            targetDay.returnTime = toStart.duration;
-                            
-                            // 빈 날 제거
-                            schedule.splice(i, 1);
-                            
-                            // 일차 번호 재조정
-                            schedule.forEach((d, idx) => d.day = idx + 1);
-                            
-                            changed = true;
-                            console.log(`    ✅ 병합 완료`);
-                            break;
+                            if (maxPairDistance <= 40) {  // 40km 이내면 병합 가능
+                                bestTarget = j;
+                                bestDistance = centerDistance;
+                                console.log(`      ✅ 병합 후보 (최대 거리: ${maxPairDistance.toFixed(1)}km)`);
+                            } else {
+                                console.log(`      ❌ 최대 거리 초과: ${maxPairDistance.toFixed(1)}km > 40km`);
+                            }
+                        } else if (centerDistance > 30) {
+                            console.log(`      ❌ 중심점 거리 초과`);
                         }
                     }
                     
-                    if (changed) break;
+                    if (bestTarget !== null) {
+                        const targetDay = schedule[bestTarget];
+                        console.log(`\n    🎯 ${sourceDay.day}일차 → ${targetDay.day}일차 병합 실행`);
+                        
+                        // 병합
+                        targetDay.visits.push(...sourceDay.visits);
+                        
+                        console.log(`      병합 전 순서 최적화 중...`);
+                        // 병합된 날을 최적화 (가까운 순서로 재정렬)
+                        targetDay.visits = await reorderVisits(targetDay.visits, start);
+                        
+                        // 출발/귀가 시간 재계산
+                        const firstVisit = targetDay.visits[0];
+                        const lastVisit = targetDay.visits[targetDay.visits.length - 1];
+                        const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
+                        const toStart = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
+                        targetDay.departureTime = toFirst.duration;
+                        targetDay.returnTime = toStart.duration;
+                        
+                        // 빈 날 제거
+                        schedule.splice(sourceIdx, 1);
+                        
+                        // 일차 번호 재조정
+                        schedule.forEach((d, idx) => d.day = idx + 1);
+                        
+                        changed = true;
+                        console.log(`      ✅ 병합 완료! (${targetDay.visits.length}개)`);
+                        break;
+                    } else {
+                        console.log(`    ❌ 병합 가능한 날짜 없음`);
+                    }
+                }
+                
+                if (!changed) {
+                    console.log('\n  ℹ️ 더 이상 병합할 날짜 없음');
                 }
             }
             
-            console.log(`\n재조정 완료: ${schedule.length}일 일정`);
+            console.log(`\n✅ 재조정 완료: ${schedule.length}일 일정`);
             console.log(`📊 캐시 히트: ${routeCache.size}개 경로 저장됨`);
+            
+            // 최종 결과 출력
+            console.log('\n📋 최종 일정:');
+            schedule.forEach(day => {
+                console.log(`  ${day.day}일차: ${day.visits.length}개 방문`);
+            });
+            
             return schedule;
         }
         
+        function calculateCenter(visits) {
+            const sumLat = visits.reduce((sum, v) => sum + parseFloat(v.lat), 0);
+            const sumLng = visits.reduce((sum, v) => sum + parseFloat(v.lng), 0);
+            return {
+                lat: sumLat / visits.length,
+                lng: sumLng / visits.length
+            };
+        }
+        
+        function getMaxPairDistance(visits1, visits2) {
+            let maxDist = 0;
+            
+            for (const v1 of visits1) {
+                for (const v2 of visits2) {
+                    const dist = calculateDistance(
+                        parseFloat(v1.lat), parseFloat(v1.lng),
+                        parseFloat(v2.lat), parseFloat(v2.lng)
+                    );
+                    if (dist > maxDist) maxDist = dist;
+                }
+            }
+            
+            return maxDist;
+        }
+        
+        /*
+        // 더 이상 사용하지 않음 - calculateCenter와 getMaxPairDistance로 대체
         function checkMergeableDays(day1, day2) {
             // 두 날의 모든 방문지 간 거리가 20km 이내인지 확인 (직선거리)
             for (const visit1 of day1.visits) {
@@ -1125,6 +1255,7 @@
             }
             return true;
         }
+        */
         
         async function reorderVisits(visits, start) {
             // Greedy 알고리즘으로 방문 순서 최적화
@@ -1210,20 +1341,42 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.routes && data.routes.length > 0) {
+                    
+                    // 🔧 기본 구조 확인
+                    if (data && data.routes && data.routes.length > 0) {
                         const route = data.routes[0];
-                        const result = {
-                            duration: Math.round(route.summary.duration / 60),
-                            distance: route.summary.distance / 1000
-                        };
                         
-                        // 캐시에 저장
-                        routeCache.set(cacheKey, result);
-                        return result;
+                        // summary 존재 여부 확인
+                        if (route.summary) {
+                            const duration = route.summary.duration;
+                            const distance = route.summary.distance;
+                            
+                            // 값이 유효한지 확인
+                            if (typeof duration === 'number' && typeof distance === 'number' && 
+                                !isNaN(duration) && !isNaN(distance)) {
+                                
+                                const result = {
+                                    duration: Math.round(duration / 60),
+                                    distance: distance / 1000
+                                };
+                                
+                                // 캐시에 저장
+                                routeCache.set(cacheKey, result);
+                                return result;
+                            } else {
+                                console.warn('Invalid duration/distance values:', { duration, distance });
+                            }
+                        } else {
+                            console.warn('No summary in route:', route);
+                        }
+                    } else {
+                        console.warn('No routes in response:', data);
                     }
+                } else {
+                    console.warn(`API response not ok: ${response.status} ${response.statusText}`);
                 }
             } catch (error) {
-                console.warn('Route API error:', error);
+                console.warn('Route API error:', error.message);
             }
             
             // API 실패 시 직선 거리로 추정

@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출장 계획 수립 업무 자동화 프롬프트</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=0c62e9a12c740ee7f1620f92ec4659bf&libraries=services"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #f0f9ff 50%, #f5fffa 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #a0e65f 0%, #5ec9ff 50%, #3fa8e0 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .section h2 {
+            color: #3fa8e0;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #a0e65f;
+            padding-bottom: 10px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #5ec9ff;
+        }
+        
+        .input-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3fa8e0 0%, #5ec9ff 50%, #a0e65f 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(63, 168, 224, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .file-upload {
+            border: 3px dashed #a0e65f;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .file-upload:hover {
+            background: #f0fff4;
+        }
+        
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        #map {
+            width: 100%;
+            height: 600px;
+            border-radius: 12px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3fa8e0 0%, #5ec9ff 50%, #a0e65f 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .route-list {
+            margin-top: 20px;
+        }
+        
+        .day-schedule {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .day-schedule h3 {
+            color: #3fa8e0;
+            margin-bottom: 15px;
+        }
+        
+        .visit-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .visit-item:hover {
+            background: #e9ecef;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .conversion-stats {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .stat-box {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-box.success {
+            background: #d1fae5;
+            border: 2px solid #a0e65f;
+        }
+        
+        .stat-box.fail {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+        }
+        
+        .stat-box.total {
+            background: #dbeafe;
+            border: 2px solid #5ec9ff;
+        }
+        
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .footer {
+            background: #6c757d;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+        
+        .footer a {
+            color: #5ec9ff;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚗 따라와</h1>
+            <p>출장 계획 수립 업무 자동화 프롬프트</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>📁 1단계: 엑셀 파일 업로드 및 주소 변환</h2>
+                <div class="file-upload" onclick="document.getElementById('excelFile').click()">
+                    <p style="font-size: 1.2em; margin-bottom: 10px;">📤 클릭하여 엑셀 파일 업로드</p>
+                    <p style="color: #666;">주소가 포함된 엑셀 파일을 선택하세요</p>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+                </div>
+                <div id="uploadStatus"></div>
+                
+                <div id="previewSection" style="display: none;">
+                    <div class="input-group" style="margin-top: 20px;">
+                        <label>주소가 포함된 열을 선택하세요</label>
+                        <select id="addressColumn">
+                            <option value="">-- 주소 열 선택 --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="conversionStats" style="display: none;">
+                    <div class="conversion-stats">
+                        <div class="stat-box total">
+                            <div class="stat-label">전체</div>
+                            <div class="stat-number" id="totalCount">0</div>
+                        </div>
+                        <div class="stat-box success">
+                            <div class="stat-label">✅ 성공</div>
+                            <div class="stat-number" id="successCount">0</div>
+                        </div>
+                        <div class="stat-box fail">
+                            <div class="stat-label">❌ 실패</div>
+                            <div class="stat-number" id="failCount">0</div>
+                        </div>
+                    </div>
+                    <div id="currentAddress" style="padding: 10px; background: #d1fae5; border-radius: 8px; margin-top: 10px; border-left: 4px solid #a0e65f;"></div>
+                </div>
+                
+                <div id="progressBar" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill">0%</div>
+                    </div>
+                </div>
+                <div class="button-group" style="margin-top: 20px;">
+                    <button id="convertBtn" onclick="convertAddresses()" disabled>🔄 주소 변환 시작</button>
+                    <button id="downloadBtn" onclick="downloadExcel()" disabled>💾 변환된 파일 다운로드</button>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📅 2단계: 방문 일정 설정</h2>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>일일 최대 업무시간 (시간)</label>
+                        <input type="number" id="maxHours" value="8" min="1" max="24">
+                    </div>
+                    <div class="input-group">
+                        <label>일일 방문 업체수 (개)</label>
+                        <input type="number" id="maxVisits" value="5" min="1" max="20">
+                    </div>
+                    <div class="input-group">
+                        <label>평균 체류시간 (분)</label>
+                        <input type="number" id="avgStay" value="30" min="5" max="180">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>출발지 주소</label>
+                    <input type="text" id="startAddress" value="경기도 성남시 분당구 장미로 42">
+                </div>
+                <button id="optimizeBtn" onclick="optimizeRoute()" disabled>🎯 경로 최적화 실행</button>
+                <div id="optimizeStatus"></div>
+                
+                <div id="optimizeProgress" style="display: none;">
+                    <div style="padding: 15px; background: #e3f2fd; border-radius: 8px; margin-top: 15px; border-left: 4px solid #5ec9ff;">
+                        <div id="optimizeCurrentCity" style="font-weight: bold; margin-bottom: 10px;"></div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="optimizeProgressFill">0%</div>
+                        </div>
+                        <div id="optimizeDetail" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>🗺️ 3단계: 최적화된 경로</h2>
+                <div id="scheduleButtons" style="display: none; margin-bottom: 15px;">
+                    <button onclick="downloadScheduleExcel()">📥 일정 파일 다운로드</button>
+                </div>
+                <!-- 일차별 색상 표기 숨김
+                <div id="legendSection" style="display: none;">
+                    <div class="legend" id="legend"></div>
+                </div>
+                -->
+                <div id="routeResult"></div>
+                <div id="map"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2025 따라와. All rights reserved.</p>
+            <p>Developed by <strong>BTS</strong> (Business Trip Secretary)</p>
+        </div>
+    </div>
+
+    <script>
+        let uploadedData = [];
+        let convertedData = [];
+        let map = null;
+        let markers = [];
+        let geocoder = null;
+        let startPoint = null;
+        let selectedColumn = 0;
+        let finalSchedule = null;
+        
+        // 🚀 경로 캐시 추가 (속도 개선)
+        const routeCache = new Map();
+        
+        const dayColors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
+            '#F06292', '#BA68C8', '#9575CD', '#7986CB', '#64B5F6',
+            '#4FC3F7', '#4DD0E1', '#4DB6AC', '#81C784', '#AED581'
+        ];
+        
+        window.onload = function() {
+            if (typeof kakao === 'undefined') {
+                showStatus('uploadStatus', '❌ 카카오 SDK 로드 실패', 'error');
+                return;
+            }
+            
+            kakao.maps.load(function() {
+                geocoder = new kakao.maps.services.Geocoder();
+                initMap();
+                // testGeocoderAPI();
+                showStatus('uploadStatus', '📂 엑셀 파일을 업로드해주세요.', 'info');
+            });
+        };
+        
+        /*
+        async function testGeocoderAPI() {
+            const result = await geocodeAddress('경기 광주시 곤지암읍 만삼로 103-7');
+            if (result) {
+                showStatus('uploadStatus', `✅ API 연결 성공! 파일을 업로드해주세요.`, 'success');
+            }
+        }
+        */
+        
+        function initMap() {
+            const container = document.getElementById('map');
+            const options = {
+                center: new kakao.maps.LatLng(37.5665, 126.9780),
+                level: 8
+            };
+            map = new kakao.maps.Map(container, options);
+        }
+        
+        function showStatus(elementId, message, type) {
+            document.getElementById(elementId).innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                
+                uploadedData = jsonData.filter(row => row.length > 0);
+                showStatus('uploadStatus', `✅ ${uploadedData.length}개 행 업로드 완료`, 'success');
+                showColumnSelector();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+        
+        function showColumnSelector() {
+            const previewSection = document.getElementById('previewSection');
+            const addressColumnSelect = document.getElementById('addressColumn');
+            
+            previewSection.style.display = 'block';
+            addressColumnSelect.innerHTML = '<option value="">-- 주소 열 선택 --</option>';
+            
+            if (uploadedData.length > 0) {
+                const headerRow = uploadedData[0];
+                headerRow.forEach((header, i) => {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = `${header} (열 ${i + 1})`;
+                    addressColumnSelect.appendChild(option);
+                });
+            }
+            
+            addressColumnSelect.onchange = function() {
+                selectedColumn = parseInt(this.value);
+                if (!isNaN(selectedColumn)) {
+                    document.getElementById('convertBtn').disabled = false;
+                }
+            };
+        }
+        
+        async function convertAddresses() {
+            if (uploadedData.length <= 1 || isNaN(selectedColumn)) return;
+            
+            document.getElementById('convertBtn').disabled = true;
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('conversionStats').style.display = 'block';
+            
+            convertedData = [];
+            let successCount = 0, failCount = 0;
+            
+            const headerRow = [...uploadedData[0], '위도', '경도'];
+            convertedData.push(headerRow);
+            
+            const dataRows = uploadedData.slice(1);
+            document.getElementById('totalCount').textContent = dataRows.length;
+            
+            console.log(`\n🚀 === 주소 변환 시작 (${dataRows.length}개) ===`);
+            const startTime = Date.now();
+            
+            // 🚀 배치 크기 설정 (한 번에 처리할 개수)
+            const BATCH_SIZE = 3;
+            const BATCH_DELAY = 100; // 배치 간 딜레이 (ms)
+            
+            for (let batchStart = 0; batchStart < dataRows.length; batchStart += BATCH_SIZE) {
+                const batchEnd = Math.min(batchStart + BATCH_SIZE, dataRows.length);
+                const batch = dataRows.slice(batchStart, batchEnd);
+                
+                // 🚀 배치 내에서 병렬 처리
+                const batchPromises = batch.map(async (row, batchIndex) => {
+                    const i = batchStart + batchIndex;
+                    const address = row[selectedColumn];
+                    
+                    document.getElementById('currentAddress').innerHTML = 
+                        `🔄 (${i + 1}/${dataRows.length}): <strong>${address || '빈 값'}</strong>`;
+                    
+                    if (!address) {
+                        return { row, result: null };
+                    }
+                    
+                    const result = await geocodeAddress(address);
+                    return { row, result };
+                });
+                
+                // 배치 완료 대기
+                const batchResults = await Promise.all(batchPromises);
+                
+                // 결과 저장
+                batchResults.forEach(({ row, result }) => {
+                    if (!row[selectedColumn]) {
+                        convertedData.push([...row, '', '']);
+                        failCount++;
+                    } else if (result) {
+                        convertedData.push([...row, result.y, result.x]);
+                        successCount++;
+                    } else {
+                        convertedData.push([...row, '변환 실패', '변환 실패']);
+                        failCount++;
+                    }
+                });
+                
+                // 진행률 업데이트
+                document.getElementById('successCount').textContent = successCount;
+                document.getElementById('failCount').textContent = failCount;
+                
+                const progress = Math.round(((batchEnd) / dataRows.length) * 100);
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressFill').textContent = progress + '%';
+                
+                // 배치 간 딜레이 (API 제한 방지)
+                if (batchEnd < dataRows.length) {
+                    await sleep(BATCH_DELAY);
+                }
+            }
+            
+            const endTime = Date.now();
+            const totalSeconds = ((endTime - startTime) / 1000).toFixed(1);
+            
+            console.log(`✅ 변환 완료: ${totalSeconds}초 소요`);
+            console.log(`   성공: ${successCount}개, 실패: ${failCount}개`);
+            console.log(`   평균: ${(totalSeconds / dataRows.length).toFixed(2)}초/개`);
+            
+            showStatus('uploadStatus', `✅ 완료! ${successCount}/${dataRows.length}개 성공 (${totalSeconds}초)`, 'success');
+            document.getElementById('downloadBtn').disabled = false;
+            document.getElementById('optimizeBtn').disabled = false;
+            document.getElementById('convertBtn').disabled = false;
+        }
+        
+        function geocodeAddress(address) {
+            return new Promise((resolve) => {
+                if (!geocoder || !address || typeof address !== 'string') {
+                    resolve(null);
+                    return;
+                }
+                
+                const originalAddress = address.trim();
+                console.log(`\n🔍 원본 주소: "${originalAddress}"`);
+                
+                const cleaningSteps = [
+                    (addr) => addr,
+                    (addr) => addr.replace(/\([^)]*\)/g, '').trim(),
+                    (addr) => addr.replace(/\([^)]*\)/g, '').replace(/[\.·,]+$/g, '').trim(),
+                    (addr) => {
+                        const cleaned = addr.replace(/\([^)]*\)/g, '').replace(/[\.·,]+$/g, '').trim();
+                        const parts = cleaned.split(' ');
+                        if (parts.length > 3) {
+                            return parts.slice(0, -1).join(' ');
+                        }
+                        return cleaned;
+                    },
+                    (addr) => {
+                        const cleaned = addr.replace(/\([^)]*\)/g, '').replace(/[\.·,]+$/g, '').trim();
+                        const parts = cleaned.split(' ');
+                        if (parts.length > 4) {
+                            return parts.slice(0, -2).join(' ');
+                        }
+                        return null;
+                    },
+                    (addr) => {
+                        const cleaned = addr.replace(/\([^)]*\)/g, '').trim();
+                        const match = cleaned.match(/(.*?[시군구].*?[읍면동리])\s+[\d-]+/);
+                        if (match) {
+                            return match[0];
+                        }
+                        return null;
+                    }
+                ];
+                
+                attemptGeocodeSequentially(originalAddress, cleaningSteps, 0, resolve);
+            });
+        }
+        
+        function attemptGeocodeSequentially(originalAddress, cleaningSteps, stepIndex, finalResolve) {
+            if (stepIndex >= cleaningSteps.length) {
+                console.log('  ❌ 모든 시도 실패');
+                finalResolve(null);
+                return;
+            }
+            
+            const cleanedAddress = cleaningSteps[stepIndex](originalAddress);
+            
+            if (!cleanedAddress || cleanedAddress === '') {
+                attemptGeocodeSequentially(originalAddress, cleaningSteps, stepIndex + 1, finalResolve);
+                return;
+            }
+            
+            if (stepIndex > 0) {
+                console.log(`  시도 ${stepIndex + 1}: "${cleanedAddress}"`);
+            }
+            
+            geocoder.addressSearch(cleanedAddress, function(result, status) {
+                if (status === kakao.maps.services.Status.OK && result && result.length > 0) {
+                    console.log(`  ✅ 성공! (시도 ${stepIndex + 1}) 좌표: (${result[0].y}, ${result[0].x})`);
+                    finalResolve({ x: result[0].x, y: result[0].y, address: result[0].address_name });
+                } else {
+                    console.log(`  ❌ 실패 (시도 ${stepIndex + 1}, 상태: ${status})`);
+                    attemptGeocodeSequentially(originalAddress, cleaningSteps, stepIndex + 1, finalResolve);
+                }
+            });
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        function downloadExcel() {
+            const ws = XLSX.utils.aoa_to_sheet(convertedData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '변환결과');
+            XLSX.writeFile(wb, '주소_위경도_변환_' + new Date().toISOString().slice(0,10) + '.xlsx');
+        }
+        
+        async function optimizeRoute() {
+            if (!geocoder || convertedData.length === 0) return;
+            
+            const startAddress = document.getElementById('startAddress').value.trim();
+            if (!startAddress) {
+                showStatus('optimizeStatus', '❌ 출발지를 입력해주세요.', 'error');
+                return;
+            }
+            
+            console.log(`🚀 경로 캐시: ${routeCache.size}개 저장됨`);
+            
+            document.getElementById('optimizeProgress').style.display = 'block';
+            document.getElementById('optimizeBtn').disabled = true;
+            
+            startPoint = await geocodeAddress(startAddress);
+            if (!startPoint) {
+                showStatus('optimizeStatus', '❌ 출발지를 찾을 수 없습니다.', 'error');
+                document.getElementById('optimizeProgress').style.display = 'none';
+                document.getElementById('optimizeBtn').disabled = false;
+                return;
+            }
+            
+            const maxHours = parseInt(document.getElementById('maxHours').value);
+            const maxVisits = parseInt(document.getElementById('maxVisits').value);
+            const avgStay = parseInt(document.getElementById('avgStay').value);
+            
+            const validLocations = convertedData.slice(1).filter(row => {
+                const lat = parseFloat(row[row.length - 2]);
+                const lng = parseFloat(row[row.length - 1]);
+                return !isNaN(lat) && !isNaN(lng);
+            });
+            
+            if (validLocations.length === 0) {
+                showStatus('optimizeStatus', '❌ 유효한 데이터가 없습니다.', 'error');
+                document.getElementById('optimizeProgress').style.display = 'none';
+                document.getElementById('optimizeBtn').disabled = false;
+                return;
+            }
+            
+            const schedule = await createSmartSchedule(validLocations, startPoint, maxHours, maxVisits, avgStay);
+            finalSchedule = schedule;
+            
+            document.getElementById('optimizeProgress').style.display = 'none';
+            displaySchedule(schedule);
+            displayMarkersOnMap(schedule, startPoint);
+            // displayLegend(schedule);
+            document.getElementById('scheduleButtons').style.display = 'block';
+            
+            showStatus('optimizeStatus', '✅ 최적화 완료!', 'success');
+            document.getElementById('optimizeBtn').disabled = false;
+        }
+        
+        async function createSmartSchedule(locations, start, maxHours, maxVisits, avgStay) {
+            console.log(`\n📊 === 개선된 2단계 최적화 시작 ===`);
+            console.log(`총 ${locations.length}개 위치, 일일 최대 ${maxVisits}개 방문`);
+            
+            // 1단계: 상세 지역별 그룹화
+            const cityGroups = groupByDetailedRegion(locations);
+            console.log(`\n📍 1단계: ${cityGroups.length}개 지역으로 분류 완료`);
+            cityGroups.forEach(g => console.log(`  - ${g.name}: ${g.locations.length}개`));
+            
+            // 2단계: 각 그룹의 중심점까지 실제 거리 계산
+            const groupsWithDistance = await calculateGroupDistances(cityGroups, start);
+            
+            // 3단계: 출발지에서 가까운 순으로 정렬
+            const orderedGroups = groupsWithDistance.sort((a, b) => a.distance - b.distance);
+            console.log(`\n🚗 출발지 기준 정렬 완료`);
+            orderedGroups.forEach(g => console.log(`  ${g.name}: ${g.distance.toFixed(1)}km`));
+            
+            // 4단계: 각 그룹 내에서 Greedy 알고리즘으로 일정 생성
+            const schedule = await buildScheduleByGroups(orderedGroups, start, maxHours, maxVisits, avgStay, locations.length);
+            
+            const scheduledCount = schedule.reduce((sum, day) => sum + day.visits.length, 0);
+            console.log(`\n📊 === 최적화 결과 ===`);
+            console.log(`총 ${schedule.length}일 일정`);
+            console.log(`스케줄: ${scheduledCount}개 / 원본: ${locations.length}개`);
+            
+            if (scheduledCount !== locations.length) {
+                console.error(`⚠️ ${locations.length - scheduledCount}개 위치 누락!`);
+            } else {
+                console.log(`✅ 모든 위치 포함 완료!`);
+            }
+            
+            return schedule;
+        }
+        
+        function groupByDetailedRegion(locations) {
+            const groups = {};
+            
+            locations.forEach(loc => {
+                const addr = loc[selectedColumn] || loc[0];
+                const normalized = addr.replace(/\s+/g, ' ').trim();
+                
+                let regionName = '기타';
+                
+                // 도 단위 추출 패턴
+                const provincePatterns = [
+                    { pattern: /서울특별시\s*([가-힣]+구)/, prefix: '서울' },
+                    { pattern: /경기도?\s*([가-힣]+[시군])/, prefix: '경기' },
+                    { pattern: /인천광역시\s*([가-힣]+[구군])/, prefix: '인천' },
+                    { pattern: /충청남도\s*([가-힣]+[시군])/, prefix: '충남' },
+                    { pattern: /충남\s*([가-힣]+[시군])/, prefix: '충남' },
+                    { pattern: /충청북도\s*([가-힣]+[시군])/, prefix: '충북' },
+                    { pattern: /충북\s*([가-힣]+[시군])/, prefix: '충북' },
+                    { pattern: /강원[도특별자치도]*\s*([가-힣]+[시군])/, prefix: '강원' },
+                    { pattern: /전라남도\s*([가-힣]+[시군])/, prefix: '전남' },
+                    { pattern: /전남\s*([가-힣]+[시군])/, prefix: '전남' },
+                    { pattern: /전라북도\s*([가-힣]+[시군])/, prefix: '전북' },
+                    { pattern: /전북\s*([가-힣]+[시군])/, prefix: '전북' },
+                    { pattern: /경상남도\s*([가-힣]+[시군])/, prefix: '경남' },
+                    { pattern: /경남\s*([가-힣]+[시군])/, prefix: '경남' },
+                    { pattern: /경상북도\s*([가-힣]+[시군])/, prefix: '경북' },
+                    { pattern: /경북\s*([가-힣]+[시군])/, prefix: '경북' },
+                    { pattern: /제주[도특별자치도]*\s*([가-힣]+[시군])/, prefix: '제주' },
+                    { pattern: /부산광역시\s*([가-힣]+[구군])/, prefix: '부산' },
+                    { pattern: /대구광역시\s*([가-힣]+[구군])/, prefix: '대구' },
+                    { pattern: /대전광역시\s*([가-힣]+구)/, prefix: '대전' },
+                    { pattern: /광주광역시\s*([가-힣]+구)/, prefix: '광주' },
+                    { pattern: /울산광역시\s*([가-힣]+[구군])/, prefix: '울산' },
+                    { pattern: /세종특별자치시/, prefix: '세종', noCity: true }
+                ];
+                
+                // 패턴 매칭
+                for (const { pattern, prefix, noCity } of provincePatterns) {
+                    const match = normalized.match(pattern);
+                    if (match) {
+                        if (noCity) {
+                            regionName = prefix;
+                        } else {
+                            regionName = `${prefix} ${match[1]}`;
+                        }
+                        break;
+                    }
+                }
+                
+                // 매칭 실패 시 기본 시/군/구 추출
+                if (regionName === '기타') {
+                    const basicMatch = normalized.match(/([가-힣]+[시군구])/);
+                    if (basicMatch) {
+                        regionName = basicMatch[1];
+                    }
+                }
+                
+                if (!groups[regionName]) {
+                    groups[regionName] = [];
+                }
+                groups[regionName].push(loc);
+            });
+            
+            // 그룹 배열로 변환 및 중심점 계산
+            return Object.entries(groups).map(([name, locs]) => {
+                const centerLat = locs.reduce((s, l) => s + parseFloat(l[l.length - 2]), 0) / locs.length;
+                const centerLng = locs.reduce((s, l) => s + parseFloat(l[l.length - 1]), 0) / locs.length;
+                
+                return {
+                    name,
+                    locations: locs,
+                    center: { lat: centerLat, lng: centerLng }
+                };
+            });
+        }
+        
+        async function calculateGroupDistances(groups, start) {
+            const result = [];
+            
+            console.log(`\n🔍 각 지역 중심점까지 실제 거리 계산 중...`);
+            
+            for (const group of groups) {
+                const routeInfo = await getKakaoRoute(
+                    start.y, start.x,
+                    group.center.lat, group.center.lng
+                );
+                
+                result.push({
+                    ...group,
+                    distance: routeInfo.distance,
+                    duration: routeInfo.duration
+                });
+                
+                console.log(`  ${group.name}: ${routeInfo.distance.toFixed(1)}km (${routeInfo.duration}분)`);
+                // sleep 제거 - 캐싱으로 충분히 빠름
+            }
+            
+            return result;
+        }
+        
+        async function buildScheduleByGroups(orderedGroups, start, maxHours, maxVisits, avgStay, totalCount) {
+            let schedule = [];
+            let currentDay = 1;
+            let currentDayVisits = [];
+            let currentPosition = start;
+            let totalProcessed = 0;
+            
+            // 🆕 0.3시간(18분) 여유 추가
+            const maxMinutes = (maxHours + 0.3) * 60;
+            
+            console.log(`\n🎯 === 그룹별 Greedy 최적화 시작 ===`);
+            console.log(`일일 최대 업무시간: ${maxHours}시간 + 0.3시간 = ${(maxHours + 0.3).toFixed(1)}시간 (${maxMinutes.toFixed(0)}분)`);
+            console.log(`일일 최대 방문: ${maxVisits}개`);
+            
+            for (let groupIdx = 0; groupIdx < orderedGroups.length; groupIdx++) {
+                const group = orderedGroups[groupIdx];
+                let remainingInGroup = [...group.locations];
+                
+                console.log(`\n🏙️ ${group.name} 처리 중 (${group.locations.length}개)`);
+                
+                document.getElementById('optimizeCurrentCity').textContent = 
+                    `${group.name} 처리 중 (${groupIdx + 1}/${orderedGroups.length})`;
+                
+                while (remainingInGroup.length > 0) {
+                    const capacity = maxVisits - currentDayVisits.length;
+                    const currentTime = currentDayVisits.reduce((s, v) => s + parseFloat(v.time), 0);
+                    const remainTime = maxMinutes - currentTime;
+                    
+                    if (capacity === 0 || (remainTime < 30 && currentDayVisits.length > 0)) {
+                        if (currentDayVisits.length > 0) {
+                            const firstVisit = currentDayVisits[0];
+                            const lastVisit = currentDayVisits[currentDayVisits.length - 1];
+                            
+                            const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
+                            const toStart = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
+                            
+                            schedule.push({
+                                day: currentDay,
+                                visits: currentDayVisits,
+                                departureTime: toFirst.duration,
+                                returnTime: toStart.duration
+                            });
+                            
+                            console.log(`  ✅ ${currentDay}일차 완료: ${currentDayVisits.length}개`);
+                            currentDay++;
+                            currentDayVisits = [];
+                            currentPosition = start;
+                        }
+                        continue;
+                    }
+                    
+                    const progress = Math.round((totalProcessed / totalCount) * 100);
+                    document.getElementById('optimizeProgressFill').style.width = progress + '%';
+                    document.getElementById('optimizeProgressFill').textContent = progress + '%';
+                    document.getElementById('optimizeDetail').textContent = 
+                        `${totalProcessed}/${totalCount}개 완료 | ${group.name} 내 ${remainingInGroup.length}개 남음`;
+                    
+                    // 🚀 속도 개선: 직선 거리로 사전 필터링
+                    const candidates = remainingInGroup
+                        .map((loc, idx) => {
+                            const lat = parseFloat(loc[loc.length - 2]);
+                            const lng = parseFloat(loc[loc.length - 1]);
+                            
+                            if (isNaN(lat) || isNaN(lng)) return null;
+                            
+                            const straightDist = calculateDistance(
+                                parseFloat(currentPosition.y), parseFloat(currentPosition.x),
+                                lat, lng
+                            );
+                            
+                            return { idx, loc, lat, lng, straightDist };
+                        })
+                        .filter(c => c !== null)
+                        .sort((a, b) => a.straightDist - b.straightDist)
+                        .slice(0, Math.min(5, remainingInGroup.length)); // 가까운 5개만 선택
+                    
+                    if (candidates.length === 0) {
+                        console.error(`  ❌ ${group.name}에서 유효한 경로 없음`);
+                        break;
+                    }
+                    
+                    // 🚀 선택된 후보들만 API 호출 (병렬 처리)
+                    let nearestIdx = -1;
+                    let minDuration = Infinity;
+                    let nearestDistance = 0;
+                    
+                    const routePromises = candidates.map(async (candidate) => {
+                        const routeInfo = await getKakaoRoute(
+                            currentPosition.y, currentPosition.x, 
+                            candidate.lat, candidate.lng
+                        );
+                        return { ...candidate, routeInfo };
+                    });
+                    
+                    const routeResults = await Promise.all(routePromises);
+                    
+                    // 가장 가까운 것 선택
+                    for (const result of routeResults) {
+                        if (result.routeInfo.duration < minDuration) {
+                            minDuration = result.routeInfo.duration;
+                            nearestDistance = result.routeInfo.distance;
+                            nearestIdx = result.idx;
+                        }
+                    }
+                    
+                    if (nearestIdx === -1) {
+                        console.error(`  ❌ ${group.name}에서 유효한 경로 없음`);
+                        break;
+                    }
+                    
+                    const nearest = remainingInGroup[nearestIdx];
+                    const lat = parseFloat(nearest[nearest.length - 2]);
+                    const lng = parseFloat(nearest[nearest.length - 1]);
+                    
+                    const estimatedTime = minDuration + avgStay;
+                    const newTotalTime = currentTime + estimatedTime;
+                    
+                    // 🆕 20km 이상이면 다음 날로 (시간/용량 체크 전에)
+                    if (nearestDistance > 20 && currentDayVisits.length > 0) {
+                        console.log(`  📏 거리 초과 (${nearestDistance.toFixed(1)}km > 20km), 다음 날로`);
+                        
+                        const firstVisit = currentDayVisits[0];
+                        const lastVisit = currentDayVisits[currentDayVisits.length - 1];
+                        
+                        const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
+                        const toStart = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
+                        
+                        schedule.push({
+                            day: currentDay,
+                            visits: currentDayVisits,
+                            departureTime: toFirst.duration,
+                            returnTime: toStart.duration
+                        });
+                        
+                        currentDay++;
+                        currentDayVisits = [];
+                        currentPosition = start;
+                        continue;
+                    }
+                    
+                    if (newTotalTime > maxMinutes && currentDayVisits.length > 0) {
+                        console.log(`  ⏰ 시간 초과 (${(newTotalTime/60).toFixed(1)}h > ${(maxMinutes/60).toFixed(1)}h), 다음 날로`);
+                        
+                        const firstVisit = currentDayVisits[0];
+                        const lastVisit = currentDayVisits[currentDayVisits.length - 1];
+                        
+                        const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
+                        const toStart = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
+                        
+                        schedule.push({
+                            day: currentDay,
+                            visits: currentDayVisits,
+                            departureTime: toFirst.duration,
+                            returnTime: toStart.duration
+                        });
+                        
+                        currentDay++;
+                        currentDayVisits = [];
+                        currentPosition = start;
+                        continue;
+                    }
+                    
+                    currentDayVisits.push({
+                        address: nearest[selectedColumn] || nearest[0],
+                        lat, lng,
+                        distance: nearestDistance.toFixed(2),
+                        travelTime: minDuration.toFixed(0),
+                        time: estimatedTime.toFixed(0),
+                        data: nearest
+                    });
+                    
+                    console.log(`    ➕ ${nearest[selectedColumn]?.substring(0, 30)} (${nearestDistance.toFixed(1)}km)`);
+                    
+                    currentPosition = { x: lng, y: lat };
+                    remainingInGroup.splice(nearestIdx, 1);
+                    totalProcessed++;
+                }
+                
+                console.log(`  ✅ ${group.name} 완료 (${group.locations.length}개 처리)`);
+            }
+            
+            if (currentDayVisits.length > 0) {
+                const firstVisit = currentDayVisits[0];
+                const lastVisit = currentDayVisits[currentDayVisits.length - 1];
+                
+                const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
+                const toStart = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
+                
+                schedule.push({
+                    day: currentDay,
+                    visits: currentDayVisits,
+                    departureTime: toFirst.duration,
+                    returnTime: toStart.duration
+                });
+                
+                console.log(`  ✅ ${currentDay}일차 완료 (마지막)`);
+            }
+            
+            // 🆕 일정 재조정: 50% 미만인 날은 20km 이내 다른 날과 병합
+            console.log(`\n🔄 === 일정 재조정 시작 ===`);
+            schedule = await rebalanceSchedule(schedule, maxVisits, start);
+            
+            return schedule;
+        }
+        
+        async function rebalanceSchedule(schedule, maxVisits, start) {
+            const threshold = Math.floor(maxVisits * 0.5);
+            console.log(`\n🔄 === 일정 재조정 시작 ===`);
+            console.log(`재조정 기준: ${threshold}개 이하`);
+            console.log(`현재 일정: ${schedule.length}일`);
+            
+            // 각 날짜의 방문 수 출력
+            schedule.forEach(day => {
+                const status = day.visits.length <= threshold ? '❗재조정 대상' : '✅정상';
+                console.log(`  ${day.day}일차: ${day.visits.length}개 ${status}`);
+            });
+            
+            let changed = true;
+            let iterations = 0;
+            const maxIterations = 5;
+            
+            while (changed && iterations < maxIterations) {
+                changed = false;
+                iterations++;
+                console.log(`\n🔄 재조정 ${iterations}회차 시작`);
+                
+                // 재조정 대상 찾기 (방문 수가 적은 순으로 정렬)
+                const sortedDays = schedule
+                    .map((day, idx) => ({ day, originalIdx: idx }))
+                    .filter(item => item.day.visits.length <= threshold)
+                    .sort((a, b) => a.day.visits.length - b.day.visits.length);
+                
+                if (sortedDays.length === 0) {
+                    console.log('  ✅ 재조정 대상 없음');
+                    break;
+                }
+                
+                console.log(`  재조정 대상: ${sortedDays.length}일`);
+                
+                for (const { day: sourceDay, originalIdx: sourceIdx } of sortedDays) {
+                    console.log(`\n  📌 ${sourceDay.day}일차 처리 (${sourceDay.visits.length}개)`);
+                    
+                    // 소스 날짜의 중심점 계산
+                    const sourceCenter = calculateCenter(sourceDay.visits);
+                    
+                    // 병합 가능한 날 찾기
+                    let bestTarget = null;
+                    let bestDistance = Infinity;
+                    
+                    for (let j = 0; j < schedule.length; j++) {
+                        if (j === sourceIdx) continue;
+                        
+                        const targetDay = schedule[j];
+                        
+                        // 용량 체크
+                        if (targetDay.visits.length + sourceDay.visits.length > maxVisits) {
+                            console.log(`    ⏭️ ${targetDay.day}일차: 용량 초과 (${targetDay.visits.length} + ${sourceDay.visits.length} > ${maxVisits})`);
+                            continue;
+                        }
+                        
+                        // 타겟 날짜의 중심점 계산
+                        const targetCenter = calculateCenter(targetDay.visits);
+                        
+                        // 중심점 간 거리
+                        const centerDistance = calculateDistance(
+                            sourceCenter.lat, sourceCenter.lng,
+                            targetCenter.lat, targetCenter.lng
+                        );
+                        
+                        console.log(`    📍 ${targetDay.day}일차: 중심점 거리 ${centerDistance.toFixed(1)}km (용량: ${targetDay.visits.length}/${maxVisits})`);
+                        
+                        // 중심점이 30km 이내이고 가장 가까운 날 선택
+                        if (centerDistance <= 30 && centerDistance < bestDistance) {
+                            // 실제 거리로 재확인 (가장 먼 두 지점 간 거리)
+                            const maxPairDistance = getMaxPairDistance(sourceDay.visits, targetDay.visits);
+                            
+                            if (maxPairDistance <= 40) {  // 40km 이내면 병합 가능
+                                bestTarget = j;
+                                bestDistance = centerDistance;
+                                console.log(`      ✅ 병합 후보 (최대 거리: ${maxPairDistance.toFixed(1)}km)`);
+                            } else {
+                                console.log(`      ❌ 최대 거리 초과: ${maxPairDistance.toFixed(1)}km > 40km`);
+                            }
+                        } else if (centerDistance > 30) {
+                            console.log(`      ❌ 중심점 거리 초과`);
+                        }
+                    }
+                    
+                    if (bestTarget !== null) {
+                        const targetDay = schedule[bestTarget];
+                        console.log(`\n    🎯 ${sourceDay.day}일차 → ${targetDay.day}일차 병합 실행`);
+                        
+                        // 병합
+                        targetDay.visits.push(...sourceDay.visits);
+                        
+                        console.log(`      병합 전 순서 최적화 중...`);
+                        // 병합된 날을 최적화 (가까운 순서로 재정렬)
+                        targetDay.visits = await reorderVisits(targetDay.visits, start);
+                        
+                        // 출발/귀가 시간 재계산
+                        const firstVisit = targetDay.visits[0];
+                        const lastVisit = targetDay.visits[targetDay.visits.length - 1];
+                        const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
+                        const toStart = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
+                        targetDay.departureTime = toFirst.duration;
+                        targetDay.returnTime = toStart.duration;
+                        
+                        // 빈 날 제거
+                        schedule.splice(sourceIdx, 1);
+                        
+                        // 일차 번호 재조정
+                        schedule.forEach((d, idx) => d.day = idx + 1);
+                        
+                        changed = true;
+                        console.log(`      ✅ 병합 완료! (${targetDay.visits.length}개)`);
+                        break;
+                    } else {
+                        console.log(`    ❌ 병합 가능한 날짜 없음`);
+                    }
+                }
+                
+                if (!changed) {
+                    console.log('\n  ℹ️ 더 이상 병합할 날짜 없음');
+                }
+            }
+            
+            console.log(`\n✅ 재조정 완료: ${schedule.length}일 일정`);
+            console.log(`📊 캐시 히트: ${routeCache.size}개 경로 저장됨`);
+            
+            // 최종 결과 출력
+            console.log('\n📋 최종 일정:');
+            schedule.forEach(day => {
+                console.log(`  ${day.day}일차: ${day.visits.length}개 방문`);
+            });
+            
+            return schedule;
+        }
+        
+        function calculateCenter(visits) {
+            const sumLat = visits.reduce((sum, v) => sum + parseFloat(v.lat), 0);
+            const sumLng = visits.reduce((sum, v) => sum + parseFloat(v.lng), 0);
+            return {
+                lat: sumLat / visits.length,
+                lng: sumLng / visits.length
+            };
+        }
+        
+        function getMaxPairDistance(visits1, visits2) {
+            let maxDist = 0;
+            
+            for (const v1 of visits1) {
+                for (const v2 of visits2) {
+                    const dist = calculateDistance(
+                        parseFloat(v1.lat), parseFloat(v1.lng),
+                        parseFloat(v2.lat), parseFloat(v2.lng)
+                    );
+                    if (dist > maxDist) maxDist = dist;
+                }
+            }
+            
+            return maxDist;
+        }
+        
+        /*
+        // 더 이상 사용하지 않음 - calculateCenter와 getMaxPairDistance로 대체
+        function checkMergeableDays(day1, day2) {
+            // 두 날의 모든 방문지 간 거리가 20km 이내인지 확인 (직선거리)
+            for (const visit1 of day1.visits) {
+                for (const visit2 of day2.visits) {
+                    const distance = calculateDistance(
+                        parseFloat(visit1.lat), parseFloat(visit1.lng),
+                        parseFloat(visit2.lat), parseFloat(visit2.lng)
+                    );
+                    
+                    // 직선거리가 20km 넘으면 실제 경로는 더 멀 것으로 판단
+                    if (distance > 20) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        */
+        
+        async function reorderVisits(visits, start) {
+            // Greedy 알고리즘으로 방문 순서 최적화
+            const ordered = [];
+            const remaining = [...visits];
+            let currentPos = start;
+            
+            while (remaining.length > 0) {
+                // 🚀 직선 거리로 가까운 5개만 선택
+                const candidates = remaining
+                    .map((visit, idx) => {
+                        const straightDist = calculateDistance(
+                            parseFloat(currentPos.y), parseFloat(currentPos.x),
+                            parseFloat(visit.lat), parseFloat(visit.lng)
+                        );
+                        return { idx, visit, straightDist };
+                    })
+                    .sort((a, b) => a.straightDist - b.straightDist)
+                    .slice(0, Math.min(5, remaining.length));
+                
+                // 🚀 병렬로 경로 계산
+                const routePromises = candidates.map(async (candidate) => {
+                    const route = await getKakaoRoute(
+                        parseFloat(currentPos.y), 
+                        parseFloat(currentPos.x),
+                        parseFloat(candidate.visit.lat), 
+                        parseFloat(candidate.visit.lng)
+                    );
+                    return { ...candidate, route };
+                });
+                
+                const routeResults = await Promise.all(routePromises);
+                
+                // 가장 가까운 것 선택
+                let bestResult = routeResults[0];
+                for (const result of routeResults) {
+                    if (result.route.distance < bestResult.route.distance) {
+                        bestResult = result;
+                    }
+                }
+                
+                const nearest = remaining.splice(bestResult.idx, 1)[0];
+                
+                // 거리/시간 업데이트
+                nearest.distance = bestResult.route.distance.toFixed(2);
+                nearest.travelTime = bestResult.route.duration.toFixed(0);
+                const avgStay = parseInt(document.getElementById('avgStay').value) || 30;
+                nearest.time = (bestResult.route.duration + avgStay).toFixed(0);
+                
+                ordered.push(nearest);
+                currentPos = { y: nearest.lat, x: nearest.lng };
+            }
+            
+            return ordered;
+        }
+        
+        async function getKakaoRoute(startLat, startLng, endLat, endLng) {
+            // 🔧 타입 안전성: 숫자로 변환
+            startLat = parseFloat(startLat);
+            startLng = parseFloat(startLng);
+            endLat = parseFloat(endLat);
+            endLng = parseFloat(endLng);
+            
+            // 유효성 검사
+            if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
+                console.error('Invalid coordinates:', { startLat, startLng, endLat, endLng });
+                return { duration: 0, distance: 0 };
+            }
+            
+            // 🚀 캐시 키 생성 (소수점 4자리로 반올림)
+            const cacheKey = `${startLat.toFixed(4)},${startLng.toFixed(4)}-${endLat.toFixed(4)},${endLng.toFixed(4)}`;
+            
+            // 캐시에 있으면 즉시 반환
+            if (routeCache.has(cacheKey)) {
+                return routeCache.get(cacheKey);
+            }
+            
+            try {
+                const url = `https://apis-navi.kakaomobility.com/v1/directions?origin=${startLng},${startLat}&destination=${endLng},${endLat}&priority=RECOMMEND`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': 'KakaoAK e7993bf34b2b04dcdeaf01bb36f06a85' }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // 🔧 기본 구조 확인
+                    if (data && data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        
+                        // summary 존재 여부 확인
+                        if (route.summary) {
+                            const duration = route.summary.duration;
+                            const distance = route.summary.distance;
+                            
+                            // 값이 유효한지 확인
+                            if (typeof duration === 'number' && typeof distance === 'number' && 
+                                !isNaN(duration) && !isNaN(distance)) {
+                                
+                                const result = {
+                                    duration: Math.round(duration / 60),
+                                    distance: distance / 1000
+                                };
+                                
+                                // 캐시에 저장
+                                routeCache.set(cacheKey, result);
+                                return result;
+                            } else {
+                                console.warn('Invalid duration/distance values:', { duration, distance });
+                            }
+                        } else {
+                            console.warn('No summary in route:', route);
+                        }
+                    } else {
+                        console.warn('No routes in response:', data);
+                    }
+                } else {
+                    console.warn(`API response not ok: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                console.warn('Route API error:', error.message);
+            }
+            
+            // API 실패 시 직선 거리로 추정
+            const distance = calculateDistance(startLat, startLng, endLat, endLng);
+            const result = { 
+                duration: Math.round((distance / 40) * 60), 
+                distance 
+            };
+            
+            // 추정값도 캐시에 저장
+            routeCache.set(cacheKey, result);
+            return result;
+        }
+        
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            // 🔧 타입 안전성: 숫자로 변환
+            lat1 = parseFloat(lat1);
+            lon1 = parseFloat(lon1);
+            lat2 = parseFloat(lat2);
+            lon2 = parseFloat(lon2);
+            
+            if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+                return 0;
+            }
+            
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        function displaySchedule(schedule) {
+            let html = '<div class="route-list">';
+            
+            schedule.forEach(day => {
+                const totalDistance = day.visits.reduce((s, v) => s + parseFloat(v.distance), 0);
+                const travelTime = day.visits.reduce((s, v) => s + parseFloat(v.time), 0);
+                const totalTime = travelTime + (day.departureTime || 0) + (day.returnTime || 0);
+                const color = dayColors[(day.day - 1) % dayColors.length];
+                
+                html += `
+                    <div class="day-schedule" style="border-left: 5px solid ${color};">
+                        <h3>📍 ${day.day}일차 (${day.visits.length}개 | ${totalDistance.toFixed(1)}km | ${(totalTime/60).toFixed(1)}시간)</h3>
+                `;
+                
+                day.visits.forEach((visit, index) => {
+                    html += `
+                        <div class="visit-item">
+                            <div>
+                                <strong>${index + 1}. ${visit.address}</strong><br>
+                                <small>이동: ${visit.distance}km (${visit.travelTime}분) | 체류: ${document.getElementById('avgStay').value}분</small>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+            });
+            
+            html += '</div>';
+            document.getElementById('routeResult').innerHTML = html;
+        }
+        
+        /*
+        function displayLegend(schedule) {
+            let html = '<strong>📍 일차별 색상:</strong>';
+            schedule.forEach(day => {
+                const color = dayColors[(day.day - 1) % dayColors.length];
+                html += `
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: ${color};"></div>
+                        <span>${day.day}일차</span>
+                    </div>
+                `;
+            });
+            document.getElementById('legend').innerHTML = html;
+            document.getElementById('legendSection').style.display = 'block';
+        }
+        */
+        
+        function displayMarkersOnMap(schedule, start) {
+            if (!map) return;
+            
+            // 기존 마커 제거
+            markers.forEach(marker => {
+                try {
+                    if (marker && marker.setMap) {
+                        marker.setMap(null);
+                    }
+                } catch (e) {
+                    console.log('마커 제거 중 오류:', e);
+                }
+            });
+            markers = [];
+            
+            const bounds = new kakao.maps.LatLngBounds();
+            
+            // 출발지 마커
+            try {
+                const startPos = new kakao.maps.LatLng(parseFloat(start.y), parseFloat(start.x));
+                const startMarker = new kakao.maps.Marker({
+                    position: startPos,
+                    map: map,
+                    image: new kakao.maps.MarkerImage(
+                        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+                        new kakao.maps.Size(24, 35)
+                    )
+                });
+                
+                const startInfowindow = new kakao.maps.InfoWindow({
+                    content: '<div style="padding:5px;font-size:12px;">🏠 출발지</div>'
+                });
+                startInfowindow.open(map, startMarker);
+                markers.push(startMarker);
+                bounds.extend(startPos);
+            } catch (e) {
+                console.error('출발지 마커 생성 오류:', e);
+            }
+            
+            // 방문지 마커 및 경로선
+            schedule.forEach((day) => {
+                const color = dayColors[(day.day - 1) % dayColors.length];
+                
+                day.visits.forEach((visit, visitIndex) => {
+                    try {
+                        const lat = parseFloat(visit.lat);
+                        const lng = parseFloat(visit.lng);
+                        
+                        if (isNaN(lat) || isNaN(lng)) {
+                            console.warn(`유효하지 않은 좌표: ${visit.address}`);
+                            return;
+                        }
+                        
+                        const position = new kakao.maps.LatLng(lat, lng);
+                        
+                        // 경로선 그리기
+                        if (visitIndex > 0) {
+                            const prevVisit = day.visits[visitIndex - 1];
+                            const prevLat = parseFloat(prevVisit.lat);
+                            const prevLng = parseFloat(prevVisit.lng);
+                            
+                            if (!isNaN(prevLat) && !isNaN(prevLng)) {
+                                const polyline = new kakao.maps.Polyline({
+                                    path: [
+                                        new kakao.maps.LatLng(prevLat, prevLng),
+                                        position
+                                    ],
+                                    strokeWeight: 3,
+                                    strokeColor: color,
+                                    strokeOpacity: 0.7
+                                });
+                                polyline.setMap(map);
+                                markers.push(polyline);
+                            }
+                        }
+                        
+                        // 🎨 색상 있는 커스텀 마커 생성
+                        const markerContent = document.createElement('div');
+                        markerContent.style.cssText = `
+                            width: 36px;
+                            height: 36px;
+                            background: ${color};
+                            border: 3px solid white;
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-weight: bold;
+                            color: white;
+                            font-size: 14px;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                            cursor: pointer;
+                            position: relative;
+                        `;
+                        markerContent.textContent = visitIndex + 1;
+                        
+                        // 커스텀 오버레이 생성
+                        const customOverlay = new kakao.maps.CustomOverlay({
+                            position: position,
+                            content: markerContent,
+                            yAnchor: 0.5,
+                            zIndex: 3
+                        });
+                        
+                        customOverlay.setMap(map);
+                        
+                        // 인포윈도우 생성
+                        const infowindow = new kakao.maps.InfoWindow({
+                            content: `<div style="padding:8px;font-size:12px;min-width:150px;">
+                                <strong style="color:${color};">${day.day}일차-${visitIndex + 1}</strong><br>
+                                ${visit.address}<br>
+                                <small>🚗 ${visit.travelTime}분 | 📍 ${visit.distance}km</small>
+                            </div>`,
+                            removable: false
+                        });
+                        
+                        // 마커 클릭 이벤트
+                        markerContent.addEventListener('click', function() {
+                            // 기존 열린 인포윈도우 모두 닫기
+                            markers.forEach(m => {
+                                if (m.infowindow && m.infowindow.close) {
+                                    m.infowindow.close();
+                                }
+                            });
+                            
+                            // 임시 마커 위치 생성 (인포윈도우 표시용)
+                            const tempMarker = new kakao.maps.Marker({
+                                position: position,
+                                map: null
+                            });
+                            
+                            infowindow.open(map, tempMarker);
+                            
+                            // 3초 후 자동 닫기
+                            setTimeout(() => {
+                                infowindow.close();
+                            }, 3000);
+                        });
+                        
+                        markers.push({
+                            overlay: customOverlay,
+                            infowindow: infowindow,
+                            setMap: function(m) {
+                                if (this.overlay) this.overlay.setMap(m);
+                            }
+                        });
+                        
+                        bounds.extend(position);
+                        
+                    } catch (e) {
+                        console.error(`마커 생성 오류 (${visit.address}):`, e);
+                    }
+                });
+            });
+            
+            // 지도 범위 조정
+            try {
+                map.setBounds(bounds);
+            } catch (e) {
+                console.error('지도 범위 조정 오류:', e);
+            }
+        }
+        
+        function downloadScheduleExcel() {
+            if (!finalSchedule || !convertedData) return;
+            
+            console.log('\n📥 === 일정 파일 다운로드 시작 ===');
+            console.log(`convertedData 행 수: ${convertedData.length} (헤더 포함)`);
+            console.log(`데이터 행 수: ${convertedData.length - 1}`);
+            
+            // 원본 데이터 복사 (행 순서 유지)
+            const scheduleData = convertedData.map(row => [...row]);
+            
+            // 헤더에 "일정" 열 추가
+            scheduleData[0].push('일정');
+            
+            // 일정 매핑 생성
+            const scheduleMap = new Map();
+            const usedRows = new Set();  // 이미 사용된 행 추적
+            let totalScheduledVisits = 0;
+            
+            finalSchedule.forEach(day => {
+                day.visits.forEach((visit, idx) => {
+                    totalScheduledVisits++;
+                    
+                    // 원본 데이터의 행 번호 찾기 (위도/경도로 매칭, 아직 사용되지 않은 행만)
+                    for (let i = 1; i < convertedData.length; i++) {
+                        // 이미 사용된 행은 스킵
+                        if (usedRows.has(i)) continue;
+                        
+                        const row = convertedData[i];
+                        const rowLat = parseFloat(row[row.length - 2]);
+                        const rowLng = parseFloat(row[row.length - 1]);
+                        
+                        if (isNaN(rowLat) || isNaN(rowLng)) continue;
+                        
+                        if (Math.abs(rowLat - visit.lat) < 0.0001 && 
+                            Math.abs(rowLng - visit.lng) < 0.0001) {
+                            
+                            const scheduleLabel = `Day${day.day}-${idx + 1}`;
+                            scheduleMap.set(i, scheduleLabel);
+                            usedRows.add(i);  // 사용된 행으로 표시
+                            console.log(`  매칭: 행${i} → ${scheduleLabel} (${visit.address?.substring(0, 30)}...)`);
+                            break;
+                        }
+                    }
+                });
+            });
+            
+            console.log(`\n총 스케줄된 방문: ${totalScheduledVisits}개`);
+            console.log(`매칭된 행: ${scheduleMap.size}개`);
+            
+            if (totalScheduledVisits !== scheduleMap.size) {
+                console.warn(`⚠️ 매칭 누락: ${totalScheduledVisits - scheduleMap.size}개`);
+            }
+            
+            // 원본 순서대로 일정 정보 추가
+            let addedCount = 0;
+            for (let i = 1; i < scheduleData.length; i++) {
+                const scheduleLabel = scheduleMap.get(i) || '';
+                scheduleData[i].push(scheduleLabel);
+                if (scheduleLabel) {
+                    addedCount++;
+                }
+            }
+            
+            console.log(`일정이 추가된 행: ${addedCount}개`);
+            console.log(`처리된 전체 행: ${scheduleData.length - 1}개 (헤더 제외)`);
+            
+            // 마지막 몇 행 확인
+            console.log('\n마지막 5개 행 확인:');
+            for (let i = Math.max(1, scheduleData.length - 5); i < scheduleData.length; i++) {
+                const row = scheduleData[i];
+                const scheduleCol = row[row.length - 1];
+                const address = row[selectedColumn]?.substring(0, 30) || '주소없음';
+                console.log(`  행${i}: 일정="${scheduleCol}" | 주소="${address}"`);
+            }
+            
+            const ws = XLSX.utils.aoa_to_sheet(scheduleData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '일정표');
+            XLSX.writeFile(wb, '출장일정_' + new Date().toISOString().slice(0,10) + '.xlsx');
+            
+            console.log('\n✅ 일정 파일 다운로드 완료');
+        }
+    </script>
+</body>
+</html>

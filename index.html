@@ -273,17 +273,6 @@
             padding-left: 40px;
         }
         
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 18px;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: linear-gradient(180deg, #a0e65f 0%, #5ec9ff 50%, #3fa8e0 100%);
-            border-radius: 2px;
-        }
-        
         .timeline-item {
             position: relative;
             margin-bottom: 20px;
@@ -340,6 +329,18 @@
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
         }
         
+        /* 마커 간 연결선 */
+        .timeline-connector {
+            position: absolute;
+            left: -14px;
+            top: 36px;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, #5ec9ff 0%, #3fa8e0 100%);
+            border-radius: 2px;
+            z-index: 1;
+        }
+        
         .timeline-content {
             background: white;
             padding: 15px 20px;
@@ -366,17 +367,26 @@
         
         .timeline-title {
             font-weight: 600;
-            font-size: 1.05em;
+            font-size: 0.95em;
             color: #1e293b;
             margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .timeline-company {
+            font-weight: 700;
+            font-size: 1.1em;
+            color: #0f172a;
+            margin-bottom: 5px;
         }
         
         .timeline-meta {
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
-            font-size: 0.9em;
-            color: #64748b;
+            font-size: 1.1em;
+            color: #000;
+            font-weight: 600;
         }
         
         .timeline-meta span {
@@ -386,25 +396,16 @@
         }
         
         .travel-time {
-            margin: 10px 0;
-            padding: 8px 12px;
-            background: #f8fafc;
-            border-radius: 6px;
-            font-size: 0.85em;
-            color: #64748b;
+            margin: 15px 0;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #fff9e6 0%, #fff4d9 100%);
+            border-radius: 8px;
+            font-size: 1.15em;
+            color: #000;
+            font-weight: 700;
             text-align: center;
-            border: 1px dashed #cbd5e1;
-        }
-        
-        .accumulated-time {
-            display: inline-block;
-            margin-left: 10px;
-            padding: 4px 10px;
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            border-radius: 20px;
-            font-size: 0.85em;
-            color: #1e40af;
-            font-weight: 600;
+            border: 2px solid #ffd93d;
+            box-shadow: 0 2px 6px rgba(255, 217, 61, 0.3);
         }
         
         .button-group {
@@ -498,6 +499,12 @@
                             <option value="">-- 주소 열 선택 --</option>
                         </select>
                     </div>
+                    <div class="input-group">
+                        <label>업체명이 포함된 열을 선택하세요 (선택사항)</label>
+                        <select id="companyColumn">
+                            <option value="">-- 업체명 열 선택 (선택사항) --</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div id="conversionStats" style="display: none;">
@@ -548,15 +555,15 @@
                 <div class="input-group">
                     <label>출발지 선택</label>
                     <select id="startLocation" onchange="toggleCustomAddress()">
-                        <option value="경기도 성남시 분당구 장미로 42">수도권동부환경본부 (경기 성남시 분당구 장미로 42)</option>
-                        <option value="인천 서구 환경로 42">본사 (인천 서구 환경로 42)</option>
-                        <option value="서울 강서구 화곡로68길 82">수도권서부환경본부 (서울 강서구 화곡로68길 82)</option>
-                        <option value="부산 북구 낙동북로 681번길 34">부산울산경남환경본부 (부산 북구 낙동북로 681번길 34)</option>
-                        <option value="대구 수성구 무학로 209">대구경북환경본부 (대구 수성구 무학로 209)</option>
-                        <option value="대전 서구 청사로 156">충청권환경본부 (대전 서구 청사로 156)</option>
-                        <option value="광주 광산구 무진대로 217">광주전남제주환경본부 (광주 광산구 무진대로 217)</option>
-                        <option value="강원 춘천시 경춘로 2370">강원환경본부 (강원 춘천시 경춘로 2370)</option>
-                        <option value="전북 전주시 완산구 서곡로 100">전북환경본부 (전북 전주시 완산구 서곡로 100)</option>
+                        <option value="경기도 성남시 분당구 장미로 42" data-name="수도권동부환경본부">수도권동부환경본부 (경기 성남시 분당구 장미로 42)</option>
+                        <option value="인천 서구 환경로 42" data-name="본사">본사 (인천 서구 환경로 42)</option>
+                        <option value="서울 강서구 화곡로68길 82" data-name="수도권서부환경본부">수도권서부환경본부 (서울 강서구 화곡로68길 82)</option>
+                        <option value="부산 북구 낙동북로 681번길 34" data-name="부산울산경남환경본부">부산울산경남환경본부 (부산 북구 낙동북로 681번길 34)</option>
+                        <option value="대구 수성구 무학로 209" data-name="대구경북환경본부">대구경북환경본부 (대구 수성구 무학로 209)</option>
+                        <option value="대전 서구 청사로 156" data-name="충청권환경본부">충청권환경본부 (대전 서구 청사로 156)</option>
+                        <option value="광주 광산구 무진대로 217" data-name="광주전남제주환경본부">광주전남제주환경본부 (광주 광산구 무진대로 217)</option>
+                        <option value="강원 춘천시 경춘로 2370" data-name="강원환경본부">강원환경본부 (강원 춘천시 경춘로 2370)</option>
+                        <option value="전북 전주시 완산구 서곡로 100" data-name="전북환경본부">전북환경본부 (전북 전주시 완산구 서곡로 100)</option>
                         <option value="custom">기타 (직접 입력)</option>
                     </select>
                     <input type="text" id="customAddressInput" placeholder="출발지 주소를 입력하세요">
@@ -599,7 +606,9 @@
         let geocoder = null;
         let startPoint = null;
         let selectedColumn = 0;
+        let companyColumn = -1;
         let finalSchedule = null;
+        let startLocationName = '';
         
         // 🚀 경로 캐시 추가 (속도 개선)
         const routeCache = new Map();
@@ -633,8 +642,11 @@
             if (select.value === 'custom') {
                 customInput.style.display = 'block';
                 customInput.focus();
+                startLocationName = '출발지';
             } else {
                 customInput.style.display = 'none';
+                const selectedOption = select.options[select.selectedIndex];
+                startLocationName = selectedOption.getAttribute('data-name') || '출발지';
             }
         }
         
@@ -643,8 +655,11 @@
             const customInput = document.getElementById('customAddressInput');
             
             if (select.value === 'custom') {
+                startLocationName = customInput.value.trim() || '출발지';
                 return customInput.value.trim();
             } else {
+                const selectedOption = select.options[select.selectedIndex];
+                startLocationName = selectedOption.getAttribute('data-name') || '출발지';
                 return select.value.trim();
             }
         }
@@ -730,9 +745,11 @@
         function showColumnSelector() {
             const previewSection = document.getElementById('previewSection');
             const addressColumnSelect = document.getElementById('addressColumn');
+            const companyColumnSelect = document.getElementById('companyColumn');
             
             previewSection.style.display = 'block';
             addressColumnSelect.innerHTML = '<option value="">-- 주소 열 선택 --</option>';
+            companyColumnSelect.innerHTML = '<option value="">-- 업체명 열 선택 (선택사항) --</option>';
             
             if (uploadedData.length > 0) {
                 const headerRow = uploadedData[0];
@@ -741,6 +758,11 @@
                     option.value = i;
                     option.textContent = `${header} (열 ${i + 1})`;
                     addressColumnSelect.appendChild(option);
+                    
+                    const option2 = document.createElement('option');
+                    option2.value = i;
+                    option2.textContent = `${header} (열 ${i + 1})`;
+                    companyColumnSelect.appendChild(option2);
                 });
             }
             
@@ -749,6 +771,11 @@
                 if (!isNaN(selectedColumn)) {
                     document.getElementById('convertBtn').disabled = false;
                 }
+            };
+            
+            companyColumnSelect.onchange = function() {
+                const val = parseInt(this.value);
+                companyColumn = isNaN(val) ? -1 : val;
             };
         }
         
@@ -1269,8 +1296,12 @@
                         continue;
                     }
                     
+                    // 업체명 추출
+                    const companyName = (companyColumn >= 0 && nearest[companyColumn]) ? nearest[companyColumn] : '';
+                    
                     currentDayVisits.push({
                         address: nearest[selectedColumn] || nearest[0],
+                        company: companyName,
                         lat, lng,
                         distance: nearestDistance.toFixed(2),
                         travelTime: minDuration.toFixed(0),
@@ -1626,12 +1657,12 @@
         }
         
         function displaySchedule(schedule) {
-            const avgStay = parseInt(document.getElementById('avgStay').value);
             let html = '<div class="route-list">';
             
             schedule.forEach(day => {
                 const totalDistance = day.visits.reduce((s, v) => s + parseFloat(v.distance), 0);
                 const travelTime = day.visits.reduce((s, v) => s + parseFloat(v.travelTime), 0);
+                const avgStay = parseInt(document.getElementById('avgStay').value);
                 const totalTime = travelTime + (day.departureTime || 0) + (day.returnTime || 0) + (day.visits.length * avgStay);
                 const color = dayColors[(day.day - 1) % dayColors.length];
                 
@@ -1666,58 +1697,39 @@
                             <div class="timeline-item">
                                 <div class="timeline-icon start">🏠</div>
                                 <div class="timeline-content start-point">
-                                    <div class="timeline-title">출발</div>
-                                    <div class="timeline-meta">
-                                        <span>⏰ 출발 시간</span>
-                                    </div>
+                                    <div class="timeline-title">${startLocationName}</div>
                                 </div>
                             </div>
                 `;
                 
-                let accumulatedTime = day.departureTime || 0;
-                
                 day.visits.forEach((visit, index) => {
-                    accumulatedTime += parseFloat(visit.travelTime);
-                    const stayEnd = accumulatedTime + avgStay;
+                    const showConnector = index < day.visits.length - 1;
                     
                     html += `
                         <div class="travel-time">
-                            🚗 ${visit.travelTime}분 이동 (${visit.distance}km)
+                            🚗 ${visit.travelTime}분 | 📍 ${visit.distance}km
                         </div>
                         
-                        <div class="timeline-item">
+                        <div class="timeline-item" style="position: relative;">
                             <div class="timeline-icon visit" style="background: ${color};">${index + 1}</div>
+                            ${showConnector ? `<div class="timeline-connector" style="background: ${color};"></div>` : ''}
                             <div class="timeline-content">
-                                <div class="timeline-title">
-                                    ${visit.address}
-                                    <span class="accumulated-time">⏱️ ${Math.round(accumulatedTime)}분 경과</span>
-                                </div>
-                                <div class="timeline-meta">
-                                    <span>⏰ 체류 ${avgStay}분</span>
-                                    <span>📍 누적 ${(day.visits.slice(0, index + 1).reduce((s, v) => s + parseFloat(v.distance), 0)).toFixed(1)}km</span>
-                                </div>
+                                ${visit.company ? `<div class="timeline-company">${visit.company}</div>` : ''}
+                                <div class="timeline-title">${visit.address}</div>
                             </div>
                         </div>
                     `;
-                    
-                    accumulatedTime = stayEnd;
                 });
                 
                 html += `
                         <div class="travel-time">
-                            🚗 ${day.returnTime}분 이동 (귀가)
+                            🚗 ${day.returnTime}분 (귀가)
                         </div>
                         
                         <div class="timeline-item">
                             <div class="timeline-icon end">🏁</div>
                             <div class="timeline-content end-point">
-                                <div class="timeline-title">
-                                    귀가
-                                    <span class="accumulated-time">⏱️ 총 ${Math.round(totalTime)}분</span>
-                                </div>
-                                <div class="timeline-meta">
-                                    <span>🎯 일정 종료</span>
-                                </div>
+                                <div class="timeline-title">귀가</div>
                             </div>
                         </div>
                     </div>
@@ -1836,12 +1848,21 @@
                         customOverlay.setMap(map);
                         
                         // 인포윈도우 생성
-                        const infowindow = new kakao.maps.InfoWindow({
-                            content: `<div style="padding:8px;font-size:12px;min-width:150px;">
+                        const infoContent = visit.company 
+                            ? `<div style="padding:8px;font-size:12px;min-width:150px;">
+                                <strong style="color:${color};">${day.day}일차-${visitIndex + 1}</strong><br>
+                                <strong>${visit.company}</strong><br>
+                                ${visit.address}<br>
+                                <small>🚗 ${visit.travelTime}분 | 📍 ${visit.distance}km</small>
+                            </div>`
+                            : `<div style="padding:8px;font-size:12px;min-width:150px;">
                                 <strong style="color:${color};">${day.day}일차-${visitIndex + 1}</strong><br>
                                 ${visit.address}<br>
                                 <small>🚗 ${visit.travelTime}분 | 📍 ${visit.distance}km</small>
-                            </div>`,
+                            </div>`;
+                        
+                        const infowindow = new kakao.maps.InfoWindow({
+                            content: infoContent,
                             removable: false
                         });
                         

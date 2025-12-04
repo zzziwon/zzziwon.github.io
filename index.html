@@ -270,12 +270,12 @@
         
         .timeline {
             position: relative;
-            padding-left: 40px;
+            padding-left: 0;
         }
         
         .timeline-item {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             animation: fadeInUp 0.5s ease forwards;
             opacity: 0;
         }
@@ -302,7 +302,8 @@
         
         .timeline-icon {
             position: absolute;
-            left: -32px;
+            left: 0;
+            top: 0;
             width: 36px;
             height: 36px;
             border-radius: 50%;
@@ -329,25 +330,18 @@
             background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
         }
         
-        /* 마커 간 연결선 */
-        .timeline-connector {
-            position: absolute;
-            left: -14px;
-            top: 36px;
-            width: 4px;
-            height: 100%;
-            background: linear-gradient(180deg, #5ec9ff 0%, #3fa8e0 100%);
-            border-radius: 2px;
-            z-index: 1;
-        }
-        
         .timeline-content {
             background: white;
-            padding: 15px 20px;
+            padding: 12px 15px;
+            margin-left: 50px;
             border-radius: 12px;
             border-left: 4px solid #5ec9ff;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
         }
         
         .timeline-content:hover {
@@ -365,11 +359,16 @@
             background: linear-gradient(90deg, #fff0f0 0%, white 100%);
         }
         
+        .timeline-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
         .timeline-title {
             font-weight: 600;
             font-size: 0.95em;
             color: #1e293b;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             line-height: 1.4;
         }
         
@@ -382,30 +381,35 @@
         
         .timeline-meta {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
-            font-size: 1.1em;
-            color: #000;
-            font-weight: 600;
+            font-size: 0.85em;
+            color: #64748b;
         }
         
         .timeline-meta span {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
         }
         
-        .travel-time {
-            margin: 15px 0;
-            padding: 12px 16px;
-            background: linear-gradient(135deg, #fff9e6 0%, #fff4d9 100%);
+        .travel-info {
+            display: flex;
+            gap: 12px;
+            font-size: 0.9em;
+            color: #64748b;
+            white-space: nowrap;
+            padding: 6px 12px;
+            background: #f8fafc;
             border-radius: 8px;
-            font-size: 1.15em;
-            color: #000;
-            font-weight: 700;
-            text-align: center;
-            border: 2px solid #ffd93d;
-            box-shadow: 0 2px 6px rgba(255, 217, 61, 0.3);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .travel-info span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
         }
         
         .button-group {
@@ -476,8 +480,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚗 따라와</h1>
-            <p>출장 계획 수립 업무 자동화 프롬프트</p>
+            <h1>🚗 따라와 스마트 출장 경로 최적화</h1>
+            <p>엑셀파일을 업로드하여 효율적인 출장경로를 자동으로 생성하세요</p>
         </div>
         
         <div class="content">
@@ -1697,39 +1701,41 @@
                             <div class="timeline-item">
                                 <div class="timeline-icon start">🏠</div>
                                 <div class="timeline-content start-point">
-                                    <div class="timeline-title">${startLocationName}</div>
+                                    <div class="timeline-info">
+                                        <div class="timeline-title">${startLocationName}</div>
+                                    </div>
                                 </div>
                             </div>
                 `;
                 
                 day.visits.forEach((visit, index) => {
-                    const showConnector = index < day.visits.length - 1;
-                    
                     html += `
-                        <div class="travel-time">
-                            🚗 ${visit.travelTime}분 | 📍 ${visit.distance}km
-                        </div>
-                        
-                        <div class="timeline-item" style="position: relative;">
+                        <div class="timeline-item">
                             <div class="timeline-icon visit" style="background: ${color};">${index + 1}</div>
-                            ${showConnector ? `<div class="timeline-connector" style="background: ${color};"></div>` : ''}
                             <div class="timeline-content">
-                                ${visit.company ? `<div class="timeline-company">${visit.company}</div>` : ''}
-                                <div class="timeline-title">${visit.address}</div>
+                                <div class="timeline-info">
+                                    ${visit.company ? `<div class="timeline-company">${visit.company}</div>` : ''}
+                                    <div class="timeline-title">${visit.address}</div>
+                                </div>
+                                <div class="travel-info">
+                                    <span>🚗 ${visit.travelTime}분</span>
+                                    <span>📍 ${visit.distance}km</span>
+                                </div>
                             </div>
                         </div>
                     `;
                 });
                 
                 html += `
-                        <div class="travel-time">
-                            🚗 ${day.returnTime}분 (귀가)
-                        </div>
-                        
                         <div class="timeline-item">
                             <div class="timeline-icon end">🏁</div>
                             <div class="timeline-content end-point">
-                                <div class="timeline-title">귀가</div>
+                                <div class="timeline-info">
+                                    <div class="timeline-title">귀가</div>
+                                </div>
+                                <div class="travel-info">
+                                    <span>🚗 ${day.returnTime}분</span>
+                                </div>
                             </div>
                         </div>
                     </div>

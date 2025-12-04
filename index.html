@@ -252,8 +252,8 @@
             padding: 12px;
             border-radius: 10px;
             text-align: center;
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border: 2px solid #bae6fd;
+            background: linear-gradient(135deg, #f5f5f5 0%, #eeeeee 100%);
+            border: 2px solid #e0e0e0;
         }
         
         .stat-card .label {
@@ -265,7 +265,7 @@
         .stat-card .value {
             font-size: 1.3em;
             font-weight: bold;
-            color: #0369a1;
+            color: #424242;
         }
         
         .timeline {
@@ -559,8 +559,8 @@
                 <div class="input-group">
                     <label>출발지 선택</label>
                     <select id="startLocation" onchange="toggleCustomAddress()">
-                        <option value="경기도 성남시 분당구 장미로 42" data-name="수도권동부환경본부">수도권동부환경본부</option>
-                        <option value="인천 서구 환경로 42" data-name="본사">본사</option>
+                        <option value="인천 서구 환경로 42" data-name="본사">본사 (인천 서구 환경로 42)</option>
+                        <option value="경기도 성남시 분당구 장미로 42" data-name="수도권동부환경본부" selected>수도권동부환경본부</option>
                         <option value="서울 강서구 화곡로68길 82" data-name="수도권서부환경본부">수도권서부환경본부</option>
                         <option value="부산 북구 낙동북로 681번길 34" data-name="부산울산경남환경본부">부산울산경남환경본부</option>
                         <option value="대구 수성구 무학로 209" data-name="대구경북환경본부">대구경북환경본부</option>
@@ -588,10 +588,10 @@
             
             <div class="section">
                 <h2>🗺️ 3단계: 최적화된 경로</h2>
-                <div id="scheduleButtons" style="display: none; margin-bottom: 15px;">
+                <div id="routeResult"></div>
+                <div id="scheduleButtons" style="display: none; margin: 20px 0;">
                     <button onclick="downloadScheduleExcel()">📥 일정 파일 다운로드</button>
                 </div>
-                <div id="routeResult"></div>
                 <div id="map"></div>
             </div>
         </div>
@@ -637,6 +637,11 @@
             
             // 드래그앤드롭 이벤트 리스너 추가
             setupDragAndDrop();
+            
+            // 초기 출발지 이름 설정
+            const select = document.getElementById('startLocation');
+            const selectedOption = select.options[select.selectedIndex];
+            startLocationName = selectedOption.getAttribute('data-name') || '출발지';
         };
         
         function toggleCustomAddress() {
@@ -1667,7 +1672,8 @@
                 const totalDistance = day.visits.reduce((s, v) => s + parseFloat(v.distance), 0);
                 const travelTime = day.visits.reduce((s, v) => s + parseFloat(v.travelTime), 0);
                 const avgStay = parseInt(document.getElementById('avgStay').value);
-                const totalTime = travelTime + (day.departureTime || 0) + (day.returnTime || 0) + (day.visits.length * avgStay);
+                // 수정: departureTime 제거 (첫 방문지의 travelTime에 이미 포함됨)
+                const totalTime = travelTime + (day.returnTime || 0) + (day.visits.length * avgStay);
                 const color = dayColors[(day.day - 1) % dayColors.length];
                 
                 html += `

@@ -130,15 +130,34 @@
             padding: 30px;
             text-align: center;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s;
+            position: relative;
         }
         
         .file-upload:hover {
             background: #f0fff4;
+            border-color: #5ec9ff;
+        }
+        
+        .file-upload.drag-over {
+            background: #e6f7ff;
+            border-color: #3fa8e0;
+            border-style: solid;
+            transform: scale(1.02);
         }
         
         .file-upload input[type="file"] {
             display: none;
+        }
+        
+        .file-upload-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            transition: transform 0.3s;
+        }
+        
+        .file-upload:hover .file-upload-icon {
+            transform: scale(1.1);
         }
         
         .status {
@@ -268,28 +287,6 @@
             color: #666;
         }
         
-        .legend {
-            display: flex;
-            gap: 15px;
-            margin: 15px 0;
-            flex-wrap: wrap;
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-        }
-        
         .footer {
             background: #6c757d;
             color: white;
@@ -318,10 +315,12 @@
         <div class="content">
             <div class="section">
                 <h2>📁 1단계: 엑셀 파일 업로드 및 주소 변환</h2>
-                <div class="file-upload" onclick="document.getElementById('excelFile').click()">
-                    <p style="font-size: 1.2em; margin-bottom: 10px;">📤 클릭하여 엑셀 파일 업로드</p>
+                <div class="file-upload" id="fileUploadArea">
+                    <div class="file-upload-icon">📤</div>
+                    <p style="font-size: 1.2em; margin-bottom: 10px; font-weight: 600;">클릭 또는 드래그하여 엑셀 파일 업로드</p>
                     <p style="color: #666;">주소가 포함된 엑셀 파일을 선택하세요</p>
-                    <input type="file" id="excelFile" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+                    <p style="color: #999; font-size: 0.9em; margin-top: 10px;">.xlsx, .xls 파일 지원</p>
+                    <input type="file" id="excelFile" accept=".xlsx,.xls">
                 </div>
                 <div id="uploadStatus"></div>
                 
@@ -380,8 +379,18 @@
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>출발지 주소</label>
-                    <input type="text" id="startAddress" value="경기도 성남시 분당구 장미로 42">
+                    <label>출발지 선택</label>
+                    <select id="startLocation">
+                        <option value="경기도 성남시 분당구 장미로 42">수도권동부환경본부 (경기 성남시 분당구 장미로 42)</option>
+                        <option value="인천 서구 환경로 42">본사 (인천 서구 환경로 42)</option>
+                        <option value="서울 강서구 화곡로68길 82">수도권서부환경본부 (서울 강서구 화곡로68길 82)</option>
+                        <option value="부산 북구 낙동북로 681번길 34">부산울산경남환경본부 (부산 북구 낙동북로 681번길 34)</option>
+                        <option value="대구 수성구 무학로 209">대구경북환경본부 (대구 수성구 무학로 209)</option>
+                        <option value="대전 서구 청사로 156">충청권환경본부 (대전 서구 청사로 156)</option>
+                        <option value="광주 광산구 무진대로 217">광주전남제주환경본부 (광주 광산구 무진대로 217)</option>
+                        <option value="강원 춘천시 경춘로 2370">강원환경본부 (강원 춘천시 경춘로 2370)</option>
+                        <option value="전북 전주시 완산구 서곡로 100">전북환경본부 (전북 전주시 완산구 서곡로 100)</option>
+                    </select>
                 </div>
                 <button id="optimizeBtn" onclick="optimizeRoute()" disabled>🎯 경로 최적화 실행</button>
                 <div id="optimizeStatus"></div>
@@ -402,11 +411,6 @@
                 <div id="scheduleButtons" style="display: none; margin-bottom: 15px;">
                     <button onclick="downloadScheduleExcel()">📥 일정 파일 다운로드</button>
                 </div>
-                <!-- 일차별 색상 표기 숨김
-                <div id="legendSection" style="display: none;">
-                    <div class="legend" id="legend"></div>
-                </div>
-                -->
                 <div id="routeResult"></div>
                 <div id="map"></div>
             </div>
@@ -446,19 +450,77 @@
             kakao.maps.load(function() {
                 geocoder = new kakao.maps.services.Geocoder();
                 initMap();
-                // testGeocoderAPI();
                 showStatus('uploadStatus', '📂 엑셀 파일을 업로드해주세요.', 'info');
             });
+            
+            // 드래그앤드롭 이벤트 리스너 추가
+            setupDragAndDrop();
         };
         
-        /*
-        async function testGeocoderAPI() {
-            const result = await geocodeAddress('경기 광주시 곤지암읍 만삼로 103-7');
-            if (result) {
-                showStatus('uploadStatus', `✅ API 연결 성공! 파일을 업로드해주세요.`, 'success');
-            }
+        function setupDragAndDrop() {
+            const uploadArea = document.getElementById('fileUploadArea');
+            const fileInput = document.getElementById('excelFile');
+            
+            // 클릭 이벤트
+            uploadArea.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'INPUT') {
+                    fileInput.click();
+                }
+            });
+            
+            // 드래그 오버
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.add('drag-over');
+            });
+            
+            // 드래그 나가기
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.remove('drag-over');
+            });
+            
+            // 드롭
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+                        handleFile(file);
+                    } else {
+                        showStatus('uploadStatus', '❌ 엑셀 파일(.xlsx, .xls)만 업로드 가능합니다.', 'error');
+                    }
+                }
+            });
+            
+            // 파일 input 변경
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0]);
+                }
+            });
         }
-        */
+        
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                
+                uploadedData = jsonData.filter(row => row.length > 0);
+                showStatus('uploadStatus', `✅ ${uploadedData.length}개 행 업로드 완료 (${file.name})`, 'success');
+                showColumnSelector();
+            };
+            reader.readAsArrayBuffer(file);
+        }
         
         function initMap() {
             const container = document.getElementById('map');
@@ -471,24 +533,6 @@
         
         function showStatus(elementId, message, type) {
             document.getElementById(elementId).innerHTML = `<div class="status ${type}">${message}</div>`;
-        }
-        
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
-                
-                uploadedData = jsonData.filter(row => row.length > 0);
-                showStatus('uploadStatus', `✅ ${uploadedData.length}개 행 업로드 완료`, 'success');
-                showColumnSelector();
-            };
-            reader.readAsArrayBuffer(file);
         }
         
         function showColumnSelector() {
@@ -690,9 +734,9 @@
         async function optimizeRoute() {
             if (!geocoder || convertedData.length === 0) return;
             
-            const startAddress = document.getElementById('startAddress').value.trim();
+            const startAddress = document.getElementById('startLocation').value.trim();
             if (!startAddress) {
-                showStatus('optimizeStatus', '❌ 출발지를 입력해주세요.', 'error');
+                showStatus('optimizeStatus', '❌ 출발지를 선택해주세요.', 'error');
                 return;
             }
             
@@ -732,7 +776,6 @@
             document.getElementById('optimizeProgress').style.display = 'none';
             displaySchedule(schedule);
             displayMarkersOnMap(schedule, startPoint);
-            // displayLegend(schedule);
             document.getElementById('scheduleButtons').style.display = 'block';
             
             showStatus('optimizeStatus', '✅ 최적화 완료!', 'success');
@@ -867,7 +910,6 @@
                 });
                 
                 console.log(`  ${group.name}: ${routeInfo.distance.toFixed(1)}km (${routeInfo.duration}분)`);
-                // sleep 제거 - 캐싱으로 충분히 빠름
             }
             
             return result;
@@ -1236,27 +1278,6 @@
             return maxDist;
         }
         
-        /*
-        // 더 이상 사용하지 않음 - calculateCenter와 getMaxPairDistance로 대체
-        function checkMergeableDays(day1, day2) {
-            // 두 날의 모든 방문지 간 거리가 20km 이내인지 확인 (직선거리)
-            for (const visit1 of day1.visits) {
-                for (const visit2 of day2.visits) {
-                    const distance = calculateDistance(
-                        parseFloat(visit1.lat), parseFloat(visit1.lng),
-                        parseFloat(visit2.lat), parseFloat(visit2.lng)
-                    );
-                    
-                    // 직선거리가 20km 넘으면 실제 경로는 더 멀 것으로 판단
-                    if (distance > 20) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-        */
-        
         async function reorderVisits(visits, start) {
             // Greedy 알고리즘으로 방문 순서 최적화
             const ordered = [];
@@ -1443,23 +1464,6 @@
             html += '</div>';
             document.getElementById('routeResult').innerHTML = html;
         }
-        
-        /*
-        function displayLegend(schedule) {
-            let html = '<strong>📍 일차별 색상:</strong>';
-            schedule.forEach(day => {
-                const color = dayColors[(day.day - 1) % dayColors.length];
-                html += `
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: ${color};"></div>
-                        <span>${day.day}일차</span>
-                    </div>
-                `;
-            });
-            document.getElementById('legend').innerHTML = html;
-            document.getElementById('legendSection').style.display = 'block';
-        }
-        */
         
         function displayMarkersOnMap(schedule, start) {
             if (!map) return;

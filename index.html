@@ -91,6 +91,11 @@
             border-color: #5ec9ff;
         }
         
+        #customAddressInput {
+            display: none;
+            margin-top: 10px;
+        }
+        
         .input-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -219,25 +224,187 @@
         
         .day-schedule {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
         }
         
         .day-schedule h3 {
             color: #3fa8e0;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .visit-item {
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-bottom: 10px;
+        .day-stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
         }
         
-        .visit-item:hover {
-            background: #e9ecef;
+        .stat-card {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #bae6fd;
+        }
+        
+        .stat-card .label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #0369a1;
+        }
+        
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 18px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #a0e65f 0%, #5ec9ff 50%, #3fa8e0 100%);
+            border-radius: 2px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+        
+        .timeline-item:nth-child(1) { animation-delay: 0.1s; }
+        .timeline-item:nth-child(2) { animation-delay: 0.15s; }
+        .timeline-item:nth-child(3) { animation-delay: 0.2s; }
+        .timeline-item:nth-child(4) { animation-delay: 0.25s; }
+        .timeline-item:nth-child(5) { animation-delay: 0.3s; }
+        .timeline-item:nth-child(6) { animation-delay: 0.35s; }
+        .timeline-item:nth-child(7) { animation-delay: 0.4s; }
+        .timeline-item:nth-child(8) { animation-delay: 0.45s; }
+        
+        .timeline-icon {
+            position: absolute;
+            left: -32px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 2;
+        }
+        
+        .timeline-icon.start {
+            background: linear-gradient(135deg, #a0e65f 0%, #7dd64f 100%);
+        }
+        
+        .timeline-icon.visit {
+            background: linear-gradient(135deg, #5ec9ff 0%, #3fa8e0 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .timeline-icon.end {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+        
+        .timeline-content {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            border-left: 4px solid #5ec9ff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .timeline-content:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        
+        .timeline-content.start-point {
+            border-left-color: #a0e65f;
+            background: linear-gradient(90deg, #f0fff4 0%, white 100%);
+        }
+        
+        .timeline-content.end-point {
+            border-left-color: #ff6b6b;
+            background: linear-gradient(90deg, #fff0f0 0%, white 100%);
+        }
+        
+        .timeline-title {
+            font-weight: 600;
+            font-size: 1.05em;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        
+        .timeline-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 0.9em;
+            color: #64748b;
+        }
+        
+        .timeline-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .travel-time {
+            margin: 10px 0;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 6px;
+            font-size: 0.85em;
+            color: #64748b;
+            text-align: center;
+            border: 1px dashed #cbd5e1;
+        }
+        
+        .accumulated-time {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: #1e40af;
+            font-weight: 600;
         }
         
         .button-group {
@@ -380,7 +547,7 @@
                 </div>
                 <div class="input-group">
                     <label>출발지 선택</label>
-                    <select id="startLocation">
+                    <select id="startLocation" onchange="toggleCustomAddress()">
                         <option value="경기도 성남시 분당구 장미로 42">수도권동부환경본부 (경기 성남시 분당구 장미로 42)</option>
                         <option value="인천 서구 환경로 42">본사 (인천 서구 환경로 42)</option>
                         <option value="서울 강서구 화곡로68길 82">수도권서부환경본부 (서울 강서구 화곡로68길 82)</option>
@@ -390,7 +557,9 @@
                         <option value="광주 광산구 무진대로 217">광주전남제주환경본부 (광주 광산구 무진대로 217)</option>
                         <option value="강원 춘천시 경춘로 2370">강원환경본부 (강원 춘천시 경춘로 2370)</option>
                         <option value="전북 전주시 완산구 서곡로 100">전북환경본부 (전북 전주시 완산구 서곡로 100)</option>
+                        <option value="custom">기타 (직접 입력)</option>
                     </select>
+                    <input type="text" id="customAddressInput" placeholder="출발지 주소를 입력하세요">
                 </div>
                 <button id="optimizeBtn" onclick="optimizeRoute()" disabled>🎯 경로 최적화 실행</button>
                 <div id="optimizeStatus"></div>
@@ -456,6 +625,29 @@
             // 드래그앤드롭 이벤트 리스너 추가
             setupDragAndDrop();
         };
+        
+        function toggleCustomAddress() {
+            const select = document.getElementById('startLocation');
+            const customInput = document.getElementById('customAddressInput');
+            
+            if (select.value === 'custom') {
+                customInput.style.display = 'block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+            }
+        }
+        
+        function getStartAddress() {
+            const select = document.getElementById('startLocation');
+            const customInput = document.getElementById('customAddressInput');
+            
+            if (select.value === 'custom') {
+                return customInput.value.trim();
+            } else {
+                return select.value.trim();
+            }
+        }
         
         function setupDragAndDrop() {
             const uploadArea = document.getElementById('fileUploadArea');
@@ -734,9 +926,9 @@
         async function optimizeRoute() {
             if (!geocoder || convertedData.length === 0) return;
             
-            const startAddress = document.getElementById('startLocation').value.trim();
+            const startAddress = getStartAddress();
             if (!startAddress) {
-                showStatus('optimizeStatus', '❌ 출발지를 선택해주세요.', 'error');
+                showStatus('optimizeStatus', '❌ 출발지를 입력해주세요.', 'error');
                 return;
             }
             
@@ -1434,31 +1626,103 @@
         }
         
         function displaySchedule(schedule) {
+            const avgStay = parseInt(document.getElementById('avgStay').value);
             let html = '<div class="route-list">';
             
             schedule.forEach(day => {
                 const totalDistance = day.visits.reduce((s, v) => s + parseFloat(v.distance), 0);
-                const travelTime = day.visits.reduce((s, v) => s + parseFloat(v.time), 0);
-                const totalTime = travelTime + (day.departureTime || 0) + (day.returnTime || 0);
+                const travelTime = day.visits.reduce((s, v) => s + parseFloat(v.travelTime), 0);
+                const totalTime = travelTime + (day.departureTime || 0) + (day.returnTime || 0) + (day.visits.length * avgStay);
                 const color = dayColors[(day.day - 1) % dayColors.length];
                 
                 html += `
-                    <div class="day-schedule" style="border-left: 5px solid ${color};">
-                        <h3>📍 ${day.day}일차 (${day.visits.length}개 | ${totalDistance.toFixed(1)}km | ${(totalTime/60).toFixed(1)}시간)</h3>
+                    <div class="day-schedule" style="border-top: 5px solid ${color};">
+                        <h3>
+                            <span style="background: ${color}; color: white; padding: 8px 15px; border-radius: 8px;">
+                                ${day.day}일차
+                            </span>
+                        </h3>
+                        
+                        <div class="day-stats">
+                            <div class="stat-card">
+                                <div class="label">방문 업체</div>
+                                <div class="value">${day.visits.length}개</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">총 거리</div>
+                                <div class="value">${totalDistance.toFixed(1)}km</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">이동 시간</div>
+                                <div class="value">${Math.round(travelTime)}분</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="label">총 소요시간</div>
+                                <div class="value">${(totalTime/60).toFixed(1)}시간</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-icon start">🏠</div>
+                                <div class="timeline-content start-point">
+                                    <div class="timeline-title">출발</div>
+                                    <div class="timeline-meta">
+                                        <span>⏰ 출발 시간</span>
+                                    </div>
+                                </div>
+                            </div>
                 `;
                 
+                let accumulatedTime = day.departureTime || 0;
+                
                 day.visits.forEach((visit, index) => {
+                    accumulatedTime += parseFloat(visit.travelTime);
+                    const stayEnd = accumulatedTime + avgStay;
+                    
                     html += `
-                        <div class="visit-item">
-                            <div>
-                                <strong>${index + 1}. ${visit.address}</strong><br>
-                                <small>이동: ${visit.distance}km (${visit.travelTime}분) | 체류: ${document.getElementById('avgStay').value}분</small>
+                        <div class="travel-time">
+                            🚗 ${visit.travelTime}분 이동 (${visit.distance}km)
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-icon visit" style="background: ${color};">${index + 1}</div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">
+                                    ${visit.address}
+                                    <span class="accumulated-time">⏱️ ${Math.round(accumulatedTime)}분 경과</span>
+                                </div>
+                                <div class="timeline-meta">
+                                    <span>⏰ 체류 ${avgStay}분</span>
+                                    <span>📍 누적 ${(day.visits.slice(0, index + 1).reduce((s, v) => s + parseFloat(v.distance), 0)).toFixed(1)}km</span>
+                                </div>
                             </div>
                         </div>
                     `;
+                    
+                    accumulatedTime = stayEnd;
                 });
                 
-                html += '</div>';
+                html += `
+                        <div class="travel-time">
+                            🚗 ${day.returnTime}분 이동 (귀가)
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-icon end">🏁</div>
+                            <div class="timeline-content end-point">
+                                <div class="timeline-title">
+                                    귀가
+                                    <span class="accumulated-time">⏱️ 총 ${Math.round(totalTime)}분</span>
+                                </div>
+                                <div class="timeline-meta">
+                                    <span>🎯 일정 종료</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
             });
             
             html += '</div>';
@@ -1693,15 +1957,6 @@
             
             console.log(`일정이 추가된 행: ${addedCount}개`);
             console.log(`처리된 전체 행: ${scheduleData.length - 1}개 (헤더 제외)`);
-            
-            // 마지막 몇 행 확인
-            console.log('\n마지막 5개 행 확인:');
-            for (let i = Math.max(1, scheduleData.length - 5); i < scheduleData.length; i++) {
-                const row = scheduleData[i];
-                const scheduleCol = row[row.length - 1];
-                const address = row[selectedColumn]?.substring(0, 30) || '주소없음';
-                console.log(`  행${i}: 일정="${scheduleCol}" | 주소="${address}"`);
-            }
             
             const ws = XLSX.utils.aoa_to_sheet(scheduleData);
             const wb = XLSX.utils.book_new();

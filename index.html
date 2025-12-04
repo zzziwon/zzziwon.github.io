@@ -327,7 +327,7 @@
         }
         
         .timeline-icon.end {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
         }
         
         .timeline-content {
@@ -355,8 +355,8 @@
         }
         
         .timeline-content.end-point {
-            border-left-color: #ff6b6b;
-            background: linear-gradient(90deg, #fff0f0 0%, white 100%);
+            border-left-color: #9e9e9e;
+            background: linear-gradient(90deg, #f5f5f5 0%, white 100%);
         }
         
         .timeline-info {
@@ -374,7 +374,7 @@
         
         .timeline-company {
             font-weight: 700;
-            font-size: 1.1em;
+            font-size: 0.95em;
             color: #0f172a;
             margin-bottom: 5px;
         }
@@ -396,8 +396,8 @@
         .travel-info {
             display: flex;
             gap: 12px;
-            font-size: 0.9em;
-            color: #64748b;
+            font-size: 1em;
+            color: #000;
             white-space: nowrap;
             padding: 6px 12px;
             background: #f8fafc;
@@ -559,16 +559,16 @@
                 <div class="input-group">
                     <label>출발지 선택</label>
                     <select id="startLocation" onchange="toggleCustomAddress()">
-                        <option value="경기도 성남시 분당구 장미로 42" data-name="수도권동부환경본부">수도권동부환경본부 (경기 성남시 분당구 장미로 42)</option>
-                        <option value="인천 서구 환경로 42" data-name="본사">본사 (인천 서구 환경로 42)</option>
-                        <option value="서울 강서구 화곡로68길 82" data-name="수도권서부환경본부">수도권서부환경본부 (서울 강서구 화곡로68길 82)</option>
-                        <option value="부산 북구 낙동북로 681번길 34" data-name="부산울산경남환경본부">부산울산경남환경본부 (부산 북구 낙동북로 681번길 34)</option>
-                        <option value="대구 수성구 무학로 209" data-name="대구경북환경본부">대구경북환경본부 (대구 수성구 무학로 209)</option>
-                        <option value="대전 서구 청사로 156" data-name="충청권환경본부">충청권환경본부 (대전 서구 청사로 156)</option>
-                        <option value="광주 광산구 무진대로 217" data-name="광주전남제주환경본부">광주전남제주환경본부 (광주 광산구 무진대로 217)</option>
-                        <option value="강원 춘천시 경춘로 2370" data-name="강원환경본부">강원환경본부 (강원 춘천시 경춘로 2370)</option>
-                        <option value="전북 전주시 완산구 서곡로 100" data-name="전북환경본부">전북환경본부 (전북 전주시 완산구 서곡로 100)</option>
-                        <option value="custom">기타 (직접 입력)</option>
+                        <option value="경기도 성남시 분당구 장미로 42" data-name="수도권동부환경본부">수도권동부환경본부</option>
+                        <option value="인천 서구 환경로 42" data-name="본사">본사</option>
+                        <option value="서울 강서구 화곡로68길 82" data-name="수도권서부환경본부">수도권서부환경본부</option>
+                        <option value="부산 북구 낙동북로 681번길 34" data-name="부산울산경남환경본부">부산울산경남환경본부</option>
+                        <option value="대구 수성구 무학로 209" data-name="대구경북환경본부">대구경북환경본부</option>
+                        <option value="대전 서구 청사로 156" data-name="충청권환경본부">충청권환경본부</option>
+                        <option value="광주 광산구 무진대로 217" data-name="광주전남제주환경본부">광주전남제주환경본부</option>
+                        <option value="강원 춘천시 경춘로 2370" data-name="강원환경본부">강원환경본부</option>
+                        <option value="전북 전주시 완산구 서곡로 100" data-name="전북환경본부">전북환경본부</option>
+                        <option value="custom">기타(직접 입력)</option>
                     </select>
                     <input type="text" id="customAddressInput" placeholder="출발지 주소를 입력하세요">
                 </div>
@@ -1698,21 +1698,13 @@
                         </div>
                         
                         <div class="timeline">
-                            <div class="timeline-item">
-                                <div class="timeline-icon start">🏠</div>
-                                <div class="timeline-content start-point">
-                                    <div class="timeline-info">
-                                        <div class="timeline-title">${startLocationName}</div>
-                                    </div>
-                                </div>
-                            </div>
                 `;
                 
                 day.visits.forEach((visit, index) => {
                     html += `
                         <div class="timeline-item">
-                            <div class="timeline-icon visit" style="background: ${color};">${index + 1}</div>
-                            <div class="timeline-content">
+                            <div class="timeline-icon visit" style="background: linear-gradient(135deg, ${color} 0%, ${color} 100%);">${index + 1}</div>
+                            <div class="timeline-content" style="border-left-color: ${color};">
                                 <div class="timeline-info">
                                     ${visit.company ? `<div class="timeline-company">${visit.company}</div>` : ''}
                                     <div class="timeline-title">${visit.address}</div>
@@ -1728,8 +1720,8 @@
                 
                 html += `
                         <div class="timeline-item">
-                            <div class="timeline-icon end">🏁</div>
-                            <div class="timeline-content end-point">
+                            <div class="timeline-icon end" style="background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);">🏁</div>
+                            <div class="timeline-content end-point" style="border-left-color: #9e9e9e;">
                                 <div class="timeline-info">
                                     <div class="timeline-title">귀가</div>
                                 </div>

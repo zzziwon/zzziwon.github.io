@@ -65,12 +65,13 @@
             padding: 30px;
         }
         
-        /* 1단계와 2단계를 양옆에 배치 */
+        /* 1단계와 2단계를 양옆에 배치 (1:1 비율로 2단계 넓힘) */
         .steps-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 25px;
             margin-bottom: 25px;
+            align-items: start;
         }
         
         @media (max-width: 1024px) {
@@ -84,6 +85,9 @@
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            min-height: 620px;
         }
         
         .section h2 {
@@ -94,24 +98,53 @@
             padding-bottom: 8px;
         }
         
+        /* 1단계 내부 1단 배치 (위아래로) */
+        .step1-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+        }
+        
+        .step1-left {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .step1-right {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
         .input-group {
+            margin-bottom: 8px;
+        }
+        
+        /* 2단계 전용 간격 조정 */
+        .section .input-row {
             margin-bottom: 15px;
+        }
+        
+        .section .input-row + .input-group {
+            margin-bottom: 12px;
         }
         
         .input-group label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             font-weight: 600;
             color: #333;
-            font-size: 0.9em;
+            font-size: 0.85em;
         }
         
         .input-group input, .input-group select {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
-            font-size: 0.95em;
+            font-size: 0.9em;
             transition: border-color 0.3s;
         }
         
@@ -121,23 +154,37 @@
         }
         
         #customAddressInput {
-            display: none;
-            margin-top: 10px;
+            margin-top: 5px;
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+        }
+        
+        #customAddressInput:enabled {
+            background-color: white;
+            cursor: text;
+        }
+        
+        #previewSection {
+            min-height: 120px;
+        }
+        
+        #previewSection .input-group {
+            margin-bottom: 10px;
         }
         
         .input-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         
         button {
             background: linear-gradient(135deg, #3fa8e0 0%, #5ec9ff 50%, #a0e65f 100%);
             color: white;
             border: none;
-            padding: 10px 25px;
+            padding: 8px 20px;
             border-radius: 8px;
-            font-size: 0.95em;
+            font-size: 0.9em;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
@@ -161,11 +208,15 @@
         .file-upload {
             border: 3px dashed #a0e65f;
             border-radius: 12px;
-            padding: 20px;
+            padding: 18px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
             position: relative;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         
         .file-upload:hover {
@@ -195,7 +246,7 @@
         }
         
         .file-upload p {
-            font-size: 1em;
+            font-size: 0.9em;
             margin-bottom: 5px;
         }
         
@@ -203,23 +254,17 @@
             font-weight: 600;
         }
         
-        /* 상태와 진행률을 겹쳐서 표시 */
-        .status-progress-container {
-            position: relative;
-            min-height: 80px;
-            margin-top: 15px;
-        }
-        
+        /* 상태 표시 영역 */
         .status {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
             font-weight: 500;
             font-size: 0.9em;
-            z-index: 2;
+            margin-bottom: 12px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .status.success {
@@ -240,33 +285,136 @@
             border: 1px solid #bee5eb;
         }
         
-        #conversionStats {
-            position: absolute;
-            top: 50px;
-            left: 0;
-            right: 0;
-            z-index: 1;
+        .status.empty {
+            background: #f8f9fa;
+            color: #999;
+            border: 1px solid #e0e0e0;
         }
         
-        #progressBar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 1;
+        .conversion-stats {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
         }
         
-        #map {
-            width: 100%;
-            height: 600px;
-            border-radius: 12px;
-            margin-top: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        .stat-box {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px 10px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-box.success {
+            background: #d1fae5;
+            border: 2px solid #a0e65f;
+        }
+        
+        .stat-box.fail {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+        }
+        
+        .stat-box.total {
+            background: #dbeafe;
+            border: 2px solid #5ec9ff;
+        }
+        
+        .stat-number {
+            font-size: 1.6em;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .stat-label {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        #currentAddress {
+            padding: 12px;
+            background: #d1fae5;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid #a0e65f;
+            font-size: 0.9em;
+            min-height: 55px;
+            display: flex;
+            align-items: center;
+        }
+        
+        #currentAddress.empty {
+            background: #f8f9fa;
+            border-left-color: #e0e0e0;
+            color: #999;
+        }
+        
+        #optimizeStatus {
+            padding: 12px;
+            background: #d1fae5;
+            border-radius: 8px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid #a0e65f;
+            font-size: 0.9em;
+            min-height: 55px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        #optimizeStatus.empty {
+            background: #f8f9fa;
+            border-left-color: #e0e0e0;
+            color: #999;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #optimizeStatus.processing {
+            background: #e3f2fd;
+            border-left-color: #5ec9ff;
+            color: #0c5460;
+            align-items: flex-start;
+        }
+        
+        #optimizeStatus.success {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #c3e6cb;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #optimizeStatus.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left-color: #f5c6cb;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #optimizeStatus.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left-color: #bee5eb;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .optimize-main {
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        
+        .optimize-detail {
+            font-size: 0.85em;
+            color: #666;
         }
         
         .progress-bar {
             width: 100%;
-            height: 25px;
+            height: 28px;
             background: #e0e0e0;
             border-radius: 15px;
             overflow: hidden;
@@ -281,7 +429,16 @@
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 0.85em;
+            font-size: 0.9em;
+            width: 0%;
+        }
+        
+        #map {
+            width: 100%;
+            height: 600px;
+            border-radius: 12px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         
         .route-list {
@@ -480,50 +637,8 @@
         
         .button-group {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
-            margin-top: 15px;
-        }
-        
-        .conversion-stats {
-            display: flex;
-            gap: 15px;
-            margin: 10px 0;
-            flex-wrap: wrap;
-        }
-        
-        .stat-box {
-            flex: 1;
-            min-width: 100px;
-            padding: 10px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        
-        .stat-box.success {
-            background: #d1fae5;
-            border: 2px solid #a0e65f;
-        }
-        
-        .stat-box.fail {
-            background: #fee2e2;
-            border: 2px solid #ef4444;
-        }
-        
-        .stat-box.total {
-            background: #dbeafe;
-            border: 2px solid #5ec9ff;
-        }
-        
-        .stat-number {
-            font-size: 1.5em;
-            font-weight: bold;
-            margin: 3px 0;
-        }
-        
-        .stat-label {
-            font-size: 0.85em;
-            color: #666;
         }
         
         .footer {
@@ -543,31 +658,29 @@
             text-decoration: underline;
         }
         
-        #currentAddress {
-            padding: 8px;
-            background: #d1fae5;
-            border-radius: 8px;
-            margin-top: 8px;
-            border-left: 4px solid #a0e65f;
-            font-size: 0.9em;
-        }
-        
         #optimizeProgress {
-            padding: 12px;
+            padding: 10px;
             background: #e3f2fd;
             border-radius: 8px;
-            margin-top: 12px;
+            margin-top: 8px;
+            margin-bottom: 12px;
             border-left: 4px solid #5ec9ff;
+            min-height: 70px;
+            visibility: hidden;
+        }
+        
+        #optimizeProgress.active {
+            visibility: visible;
         }
         
         #optimizeCurrentCity {
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             font-size: 0.9em;
         }
         
         #optimizeDetail {
-            margin-top: 8px;
+            margin-top: 5px;
             font-size: 0.85em;
             color: #666;
         }
@@ -589,18 +702,42 @@
                 <!-- 1단계 -->
                 <div class="section">
                     <h2>📁 1단계: 지리적 좌표 변환 (GCT)</h2>
-                    <div class="file-upload" id="fileUploadArea">
-                        <div class="file-upload-icon">📤</div>
-                        <p>클릭 또는 드래그하여 엑셀 파일 업로드</p>
-                        <p style="color: #666; font-size: 0.9em;">주소가 포함된 엑셀 파일을 선택하세요</p>
-                        <p style="color: #999; font-size: 0.85em; margin-top: 8px;">.xlsx, .xls 파일 지원</p>
-                        <input type="file" id="excelFile" accept=".xlsx,.xls">
-                    </div>
                     
-                    <!-- 상태와 진행률을 겹쳐서 표시 -->
-                    <div class="status-progress-container">
-                        <div id="uploadStatus"></div>
-                        <div id="conversionStats" style="display: none;">
+                    <div class="step1-content">
+                        <!-- 위: 파일 업로드 및 열 선택 -->
+                        <div class="step1-left">
+                            <div class="file-upload" id="fileUploadArea">
+                                <div class="file-upload-icon">📤</div>
+                                <p>파일 업로드</p>
+                                <p style="color: #666; font-size: 0.85em;">클릭 또는 드래그</p>
+                                <input type="file" id="excelFile" accept=".xlsx,.xls">
+                            </div>
+                            
+                            <div id="uploadStatus" class="status empty">📂 엑셀 파일을 업로드해주세요</div>
+                            
+                            <div id="previewSection">
+                                <div class="input-group">
+                                    <label>주소 열 선택</label>
+                                    <select id="addressColumn">
+                                        <option value="">-- 주소 열 선택 --</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>업체명 열 (선택사항)</label>
+                                    <select id="companyColumn">
+                                        <option value="">-- 업체명 열 선택 --</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 아래: 버튼 및 변환 상태 -->
+                        <div class="step1-right">
+                            <div class="button-group">
+                                <button id="convertBtn" onclick="convertAddresses()" disabled>🔄 변환 시작</button>
+                                <button id="downloadBtn" onclick="downloadExcel()" disabled>💾 다운로드</button>
+                            </div>
+                            
                             <div class="conversion-stats">
                                 <div class="stat-box total">
                                     <div class="stat-label">전체</div>
@@ -615,33 +752,13 @@
                                     <div class="stat-number" id="failCount">0</div>
                                 </div>
                             </div>
-                            <div id="currentAddress"></div>
-                        </div>
-                        <div id="progressBar" style="display: none;">
+                            
+                            <div id="currentAddress" class="empty">변환 대기 중</div>
+                            
                             <div class="progress-bar">
                                 <div class="progress-fill" id="progressFill">0%</div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div id="previewSection" style="display: none;">
-                        <div class="input-group" style="margin-top: 15px;">
-                            <label>주소가 포함된 열을 선택하세요</label>
-                            <select id="addressColumn">
-                                <option value="">-- 주소 열 선택 --</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>업체명이 포함된 열을 선택하세요 (선택사항)</label>
-                            <select id="companyColumn">
-                                <option value="">-- 업체명 열 선택 (선택사항) --</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="button-group">
-                        <button id="convertBtn" onclick="convertAddresses()" disabled>🔄 주소 변환 시작</button>
-                        <button id="downloadBtn" onclick="downloadExcel()" disabled>💾 변환된 파일 다운로드</button>
                     </div>
                 </div>
                 
@@ -676,17 +793,18 @@
                             <option value="전북 전주시 완산구 서곡로 100" data-name="전북환경본부">전북환경본부</option>
                             <option value="custom">기타(직접 입력)</option>
                         </select>
-                        <input type="text" id="customAddressInput" placeholder="출발지 주소를 입력하세요">
                     </div>
-                    <button id="optimizeBtn" onclick="optimizeRoute()" disabled>🎯 경로 최적화 실행</button>
-                    <div id="optimizeStatus"></div>
+                    <div class="input-group">
+                        <label>출발지 주소 (직접 입력)</label>
+                        <input type="text" id="customAddressInput" placeholder="출발지 주소를 입력하세요" disabled>
+                    </div>
+                    <div class="button-group" style="margin-top: 15px; margin-bottom: 15px;">
+                        <button id="optimizeBtn" onclick="optimizeRoute()" disabled>🎯 경로 최적화 실행</button>
+                    </div>
+                    <div id="optimizeStatus" class="empty">실행 대기 중</div>
                     
-                    <div id="optimizeProgress" style="display: none;">
-                        <div id="optimizeCurrentCity"></div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="optimizeProgressFill">0%</div>
-                        </div>
-                        <div id="optimizeDetail"></div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="optimizeProgressFill">0%</div>
                     </div>
                 </div>
             </div>
@@ -756,11 +874,12 @@
             const customInput = document.getElementById('customAddressInput');
             
             if (select.value === 'custom') {
-                customInput.style.display = 'block';
+                customInput.disabled = false;
                 customInput.focus();
                 startLocationName = '출발지';
             } else {
-                customInput.style.display = 'none';
+                customInput.disabled = true;
+                customInput.value = '';
                 const selectedOption = select.options[select.selectedIndex];
                 startLocationName = selectedOption.getAttribute('data-name') || '출발지';
             }
@@ -839,7 +958,7 @@
                 const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
                 
                 uploadedData = jsonData.filter(row => row.length > 0);
-                showStatus('uploadStatus', `✅ ${uploadedData.length}개 행 업로드 완료 (${file.name})`, 'success');
+                showStatus('uploadStatus', `✅ ${uploadedData.length}개 행 업로드 완료`, 'success');
                 showColumnSelector();
             };
             reader.readAsArrayBuffer(file);
@@ -855,17 +974,24 @@
         }
         
         function showStatus(elementId, message, type) {
-            document.getElementById(elementId).innerHTML = `<div class="status ${type}">${message}</div>`;
+            const element = document.getElementById(elementId);
+            if (elementId === 'optimizeStatus') {
+                // optimizeStatus는 currentAddress와 동일한 방식
+                element.className = type;
+                element.textContent = message;
+            } else {
+                // uploadStatus는 기존 방식
+                element.className = 'status ' + type;
+                element.textContent = message;
+            }
         }
         
         function showColumnSelector() {
-            const previewSection = document.getElementById('previewSection');
             const addressColumnSelect = document.getElementById('addressColumn');
             const companyColumnSelect = document.getElementById('companyColumn');
             
-            previewSection.style.display = 'block';
             addressColumnSelect.innerHTML = '<option value="">-- 주소 열 선택 --</option>';
-            companyColumnSelect.innerHTML = '<option value="">-- 업체명 열 선택 (선택사항) --</option>';
+            companyColumnSelect.innerHTML = '<option value="">-- 업체명 열 선택 --</option>';
             
             if (uploadedData.length > 0) {
                 const headerRow = uploadedData[0];
@@ -899,8 +1025,11 @@
             if (uploadedData.length <= 1 || isNaN(selectedColumn)) return;
             
             document.getElementById('convertBtn').disabled = true;
-            document.getElementById('progressBar').style.display = 'block';
-            document.getElementById('conversionStats').style.display = 'block';
+            showStatus('uploadStatus', '🔄 변환 중...', 'info');
+            
+            // currentAddress 초기화
+            const currentAddressEl = document.getElementById('currentAddress');
+            currentAddressEl.className = '';
             
             convertedData = [];
             let successCount = 0, failCount = 0;
@@ -927,7 +1056,7 @@
                     const i = batchStart + batchIndex;
                     const address = row[selectedColumn];
                     
-                    document.getElementById('currentAddress').innerHTML = 
+                    currentAddressEl.innerHTML = 
                         `🔄 (${i + 1}/${dataRows.length}): <strong>${address || '빈 값'}</strong>`;
                     
                     if (!address) {
@@ -976,7 +1105,9 @@
             console.log(`   성공: ${successCount}개, 실패: ${failCount}개`);
             console.log(`   평균: ${(totalSeconds / dataRows.length).toFixed(2)}초/개`);
             
-            showStatus('uploadStatus', `✅ 완료! ${successCount}/${dataRows.length}개 성공 (${totalSeconds}초)`, 'success');
+            showStatus('uploadStatus', `✅ 완료! ${successCount}/${dataRows.length}개 성공`, 'success');
+            currentAddressEl.innerHTML = `✅ 변환 완료 (${totalSeconds}초)`;
+            
             document.getElementById('downloadBtn').disabled = false;
             document.getElementById('optimizeBtn').disabled = false;
             document.getElementById('convertBtn').disabled = false;
@@ -1077,14 +1208,13 @@
             
             console.log(`🚀 경로 캐시: ${routeCache.size}개 저장됨`);
             
-            document.getElementById('optimizeProgress').style.display = 'block';
+            showStatus('optimizeStatus', '🔄 최적화 진행 중...', 'processing');
             document.getElementById('optimizeBtn').disabled = true;
             optimizeStartTime = Date.now();
             
             startPoint = await geocodeAddress(startAddress);
             if (!startPoint) {
                 showStatus('optimizeStatus', '❌ 출발지를 찾을 수 없습니다.', 'error');
-                document.getElementById('optimizeProgress').style.display = 'none';
                 document.getElementById('optimizeBtn').disabled = false;
                 return;
             }
@@ -1101,7 +1231,6 @@
             
             if (validLocations.length === 0) {
                 showStatus('optimizeStatus', '❌ 유효한 데이터가 없습니다.', 'error');
-                document.getElementById('optimizeProgress').style.display = 'none';
                 document.getElementById('optimizeBtn').disabled = false;
                 return;
             }
@@ -1112,7 +1241,6 @@
             const endTime = Date.now();
             const totalSeconds = ((endTime - optimizeStartTime) / 1000).toFixed(1);
             
-            document.getElementById('optimizeProgress').style.display = 'none';
             displaySchedule(schedule);
             displayMarkersOnMap(schedule, startPoint);
             document.getElementById('scheduleButtons').style.display = 'block';
@@ -1138,7 +1266,7 @@
             console.log(`\n🚗 출발지 기준 정렬 완료`);
             orderedGroups.forEach(g => console.log(`  ${g.name}: ${g.distance.toFixed(1)}km`));
             
-            // 4단계: 각 그룹 내에서 Greedy 알고리즘으로 일정 생성 (우선순위 변경)
+            // 4단계: 각 그룹 내에서 Greedy 알고리즘으로 일정 생성
             const schedule = await buildScheduleByGroups(orderedGroups, start, maxHours, maxVisits, avgStay, locations.length);
             
             const scheduledCount = schedule.reduce((sum, day) => sum + day.visits.length, 0);
@@ -1261,13 +1389,12 @@
             let currentPosition = start;
             let totalProcessed = 0;
             
-            // 🆕 알고리즘 우선순위 변경: 체류시간 + 업무시간 우선, 방문 수는 유연하게
             const maxMinutes = (maxHours + 0.3) * 60;
             
-            console.log(`\n🎯 === 그룹별 Greedy 최적화 시작 (우선순위 변경) ===`);
-            console.log(`일일 최대 업무시간: ${maxHours}시간 + 0.3시간 = ${(maxHours + 0.3).toFixed(1)}시간 (${maxMinutes.toFixed(0)}분) - 최우선`);
-            console.log(`평균 체류시간: ${avgStay}분 - 최우선`);
-            console.log(`일일 최대 방문: ${maxVisits}개 - 유연하게 적용 (초과 가능)`);
+            console.log(`\n🎯 === 그룹별 Greedy 최적화 시작 ===`);
+            console.log(`일일 최대 업무시간: ${maxHours}시간 + 0.3시간 = ${(maxHours + 0.3).toFixed(1)}시간 (${maxMinutes.toFixed(0)}분)`);
+            console.log(`평균 체류시간: ${avgStay}분`);
+            console.log(`일일 최대 방문: ${maxVisits}개`);
             
             for (let groupIdx = 0; groupIdx < orderedGroups.length; groupIdx++) {
                 const group = orderedGroups[groupIdx];
@@ -1275,17 +1402,16 @@
                 
                 console.log(`\n🏙️ ${group.name} 처리 중 (${group.locations.length}개)`);
                 
-                document.getElementById('optimizeCurrentCity').textContent = 
-                    `${group.name} 처리 중 (${groupIdx + 1}/${orderedGroups.length})`;
+                const statusEl = document.getElementById('optimizeStatus');
+                statusEl.className = 'processing';
+                statusEl.innerHTML = `<div class="optimize-main">${group.name} 처리 중 (${groupIdx + 1}/${orderedGroups.length})</div><div class="optimize-detail">준비 중...</div>`;
                 
                 while (remainingInGroup.length > 0) {
                     const currentTime = currentDayVisits.reduce((s, v) => s + parseFloat(v.time), 0);
                     const remainTime = maxMinutes - currentTime;
                     
-                    // 🆕 우선순위 1: 시간 체크 (체류시간 + 업무시간)
-                    // 시간이 부족하면 다음 날로
                     if (remainTime < avgStay && currentDayVisits.length > 0) {
-                        console.log(`  ⏰ 시간 부족 (남은 시간: ${remainTime.toFixed(0)}분 < 체류시간: ${avgStay}분), 다음 날로`);
+                        console.log(`  ⏰ 시간 부족, 다음 날로`);
                         
                         const firstVisit = currentDayVisits[0];
                         const lastVisit = currentDayVisits[currentDayVisits.length - 1];
@@ -1310,10 +1436,10 @@
                     const progress = Math.round((totalProcessed / totalCount) * 100);
                     document.getElementById('optimizeProgressFill').style.width = progress + '%';
                     document.getElementById('optimizeProgressFill').textContent = progress + '%';
-                    document.getElementById('optimizeDetail').textContent = 
-                        `${totalProcessed}/${totalCount}개 완료 | ${group.name} 내 ${remainingInGroup.length}개 남음`;
                     
-                    // 🚀 속도 개선: 직선 거리로 사전 필터링
+                    const statusEl = document.getElementById('optimizeStatus');
+                    statusEl.innerHTML = `<div class="optimize-main">${group.name} 처리 중 (${groupIdx + 1}/${orderedGroups.length})</div><div class="optimize-detail">${totalProcessed}/${totalCount}개 완료 | ${group.name} 내 ${remainingInGroup.length}개 남음</div>`;
+                    
                     const candidates = remainingInGroup
                         .map((loc, idx) => {
                             const lat = parseFloat(loc[loc.length - 2]);
@@ -1330,14 +1456,13 @@
                         })
                         .filter(c => c !== null)
                         .sort((a, b) => a.straightDist - b.straightDist)
-                        .slice(0, Math.min(5, remainingInGroup.length)); // 가까운 5개만 선택
+                        .slice(0, Math.min(5, remainingInGroup.length));
                     
                     if (candidates.length === 0) {
                         console.error(`  ❌ ${group.name}에서 유효한 경로 없음`);
                         break;
                     }
                     
-                    // 🚀 선택된 후보들만 API 호출 (병렬 처리)
                     let nearestIdx = -1;
                     let minDuration = Infinity;
                     let nearestDistance = 0;
@@ -1352,7 +1477,6 @@
                     
                     const routeResults = await Promise.all(routePromises);
                     
-                    // 가장 가까운 것 선택
                     for (const result of routeResults) {
                         if (result.routeInfo.duration < minDuration) {
                             minDuration = result.routeInfo.duration;
@@ -1373,9 +1497,8 @@
                     const estimatedTime = minDuration + avgStay;
                     const newTotalTime = currentTime + estimatedTime;
                     
-                    // 🆕 20km 이상이면 다음 날로 (시간 체크 전에)
                     if (nearestDistance > 20 && currentDayVisits.length > 0) {
-                        console.log(`  📏 거리 초과 (${nearestDistance.toFixed(1)}km > 20km), 다음 날로`);
+                        console.log(`  📏 거리 초과, 다음 날로`);
                         
                         const firstVisit = currentDayVisits[0];
                         const lastVisit = currentDayVisits[currentDayVisits.length - 1];
@@ -1396,9 +1519,8 @@
                         continue;
                     }
                     
-                    // 🆕 우선순위 2: 시간이 초과하면 다음 날로
                     if (newTotalTime > maxMinutes && currentDayVisits.length > 0) {
-                        console.log(`  ⏰ 시간 초과 (${(newTotalTime/60).toFixed(1)}h > ${(maxMinutes/60).toFixed(1)}h), 다음 날로`);
+                        console.log(`  ⏰ 시간 초과, 다음 날로`);
                         
                         const firstVisit = currentDayVisits[0];
                         const lastVisit = currentDayVisits[currentDayVisits.length - 1];
@@ -1419,13 +1541,10 @@
                         continue;
                     }
                     
-                    // 🆕 우선순위 3: 방문 수는 유연하게 (시간이 허락하면 maxVisits 초과 가능)
-                    // 방문 수 체크를 제거하거나, 경고만 출력
                     if (currentDayVisits.length >= maxVisits) {
-                        console.log(`  ℹ️ 방문 수 ${currentDayVisits.length}개 (설정: ${maxVisits}개), 시간이 허락하면 계속 진행`);
+                        console.log(`  ℹ️ 방문 수 ${currentDayVisits.length}개, 시간이 허락하면 계속`);
                     }
                     
-                    // 업체명 추출
                     const companyName = (companyColumn >= 0 && nearest[companyColumn]) ? nearest[companyColumn] : '';
                     
                     currentDayVisits.push({
@@ -1465,7 +1584,6 @@
                 console.log(`  ✅ ${currentDay}일차 완료 (마지막)`);
             }
             
-            // 🆕 일정 재조정: 50% 미만인 날은 20km 이내 다른 날과 병합
             console.log(`\n🔄 === 일정 재조정 시작 ===`);
             schedule = await rebalanceSchedule(schedule, maxVisits, start);
             
@@ -1478,7 +1596,6 @@
             console.log(`재조정 기준: ${threshold}개 이하`);
             console.log(`현재 일정: ${schedule.length}일`);
             
-            // 각 날짜의 방문 수 출력
             schedule.forEach(day => {
                 const status = day.visits.length <= threshold ? '❗재조정 대상' : '✅정상';
                 console.log(`  ${day.day}일차: ${day.visits.length}개 ${status}`);
@@ -1493,7 +1610,6 @@
                 iterations++;
                 console.log(`\n🔄 재조정 ${iterations}회차 시작`);
                 
-                // 재조정 대상 찾기 (방문 수가 적은 순으로 정렬)
                 const sortedDays = schedule
                     .map((day, idx) => ({ day, originalIdx: idx }))
                     .filter(item => item.day.visits.length <= threshold)
@@ -1509,10 +1625,8 @@
                 for (const { day: sourceDay, originalIdx: sourceIdx } of sortedDays) {
                     console.log(`\n  📌 ${sourceDay.day}일차 처리 (${sourceDay.visits.length}개)`);
                     
-                    // 소스 날짜의 중심점 계산
                     const sourceCenter = calculateCenter(sourceDay.visits);
                     
-                    // 병합 가능한 날 찾기
                     let bestTarget = null;
                     let bestDistance = Infinity;
                     
@@ -1521,29 +1635,24 @@
                         
                         const targetDay = schedule[j];
                         
-                        // 용량 체크
                         if (targetDay.visits.length + sourceDay.visits.length > maxVisits) {
-                            console.log(`    ⏭️ ${targetDay.day}일차: 용량 초과 (${targetDay.visits.length} + ${sourceDay.visits.length} > ${maxVisits})`);
+                            console.log(`    ⏭️ ${targetDay.day}일차: 용량 초과`);
                             continue;
                         }
                         
-                        // 타겟 날짜의 중심점 계산
                         const targetCenter = calculateCenter(targetDay.visits);
                         
-                        // 중심점 간 거리
                         const centerDistance = calculateDistance(
                             sourceCenter.lat, sourceCenter.lng,
                             targetCenter.lat, targetCenter.lng
                         );
                         
-                        console.log(`    📍 ${targetDay.day}일차: 중심점 거리 ${centerDistance.toFixed(1)}km (용량: ${targetDay.visits.length}/${maxVisits})`);
+                        console.log(`    📍 ${targetDay.day}일차: 중심점 거리 ${centerDistance.toFixed(1)}km`);
                         
-                        // 중심점이 30km 이내이고 가장 가까운 날 선택
                         if (centerDistance <= 30 && centerDistance < bestDistance) {
-                            // 실제 거리로 재확인 (가장 먼 두 지점 간 거리)
                             const maxPairDistance = getMaxPairDistance(sourceDay.visits, targetDay.visits);
                             
-                            if (maxPairDistance <= 40) {  // 40km 이내면 병합 가능
+                            if (maxPairDistance <= 40) {
                                 bestTarget = j;
                                 bestDistance = centerDistance;
                                 console.log(`      ✅ 병합 후보 (최대 거리: ${maxPairDistance.toFixed(1)}km)`);
@@ -1559,14 +1668,11 @@
                         const targetDay = schedule[bestTarget];
                         console.log(`\n    🎯 ${sourceDay.day}일차 → ${targetDay.day}일차 병합 실행`);
                         
-                        // 병합
                         targetDay.visits.push(...sourceDay.visits);
                         
                         console.log(`      병합 전 순서 최적화 중...`);
-                        // 병합된 날을 최적화 (가까운 순서로 재정렬)
                         targetDay.visits = await reorderVisits(targetDay.visits, start);
                         
-                        // 출발/귀가 시간 재계산
                         const firstVisit = targetDay.visits[0];
                         const lastVisit = targetDay.visits[targetDay.visits.length - 1];
                         const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
@@ -1574,10 +1680,8 @@
                         targetDay.departureTime = toFirst.duration;
                         targetDay.returnTime = toStart.duration;
                         
-                        // 빈 날 제거
                         schedule.splice(sourceIdx, 1);
                         
-                        // 일차 번호 재조정
                         schedule.forEach((d, idx) => d.day = idx + 1);
                         
                         changed = true;
@@ -1596,7 +1700,6 @@
             console.log(`\n✅ 재조정 완료: ${schedule.length}일 일정`);
             console.log(`📊 캐시 히트: ${routeCache.size}개 경로 저장됨`);
             
-            // 최종 결과 출력
             console.log('\n📋 최종 일정:');
             schedule.forEach(day => {
                 console.log(`  ${day.day}일차: ${day.visits.length}개 방문`);
@@ -1631,13 +1734,11 @@
         }
         
         async function reorderVisits(visits, start) {
-            // Greedy 알고리즘으로 방문 순서 최적화
             const ordered = [];
             const remaining = [...visits];
             let currentPos = start;
             
             while (remaining.length > 0) {
-                // 🚀 직선 거리로 가까운 5개만 선택
                 const candidates = remaining
                     .map((visit, idx) => {
                         const straightDist = calculateDistance(
@@ -1649,7 +1750,6 @@
                     .sort((a, b) => a.straightDist - b.straightDist)
                     .slice(0, Math.min(5, remaining.length));
                 
-                // 🚀 병렬로 경로 계산
                 const routePromises = candidates.map(async (candidate) => {
                     const route = await getKakaoRoute(
                         parseFloat(currentPos.y), 
@@ -1662,7 +1762,6 @@
                 
                 const routeResults = await Promise.all(routePromises);
                 
-                // 가장 가까운 것 선택
                 let bestResult = routeResults[0];
                 for (const result of routeResults) {
                     if (result.route.distance < bestResult.route.distance) {
@@ -1672,7 +1771,6 @@
                 
                 const nearest = remaining.splice(bestResult.idx, 1)[0];
                 
-                // 거리/시간 업데이트
                 nearest.distance = bestResult.route.distance.toFixed(2);
                 nearest.travelTime = bestResult.route.duration.toFixed(0);
                 const avgStay = parseInt(document.getElementById('avgStay').value) || 30;
@@ -1686,22 +1784,18 @@
         }
         
         async function getKakaoRoute(startLat, startLng, endLat, endLng) {
-            // 🔧 타입 안전성: 숫자로 변환
             startLat = parseFloat(startLat);
             startLng = parseFloat(startLng);
             endLat = parseFloat(endLat);
             endLng = parseFloat(endLng);
             
-            // 유효성 검사
             if (isNaN(startLat) || isNaN(startLng) || isNaN(endLat) || isNaN(endLng)) {
                 console.error('Invalid coordinates:', { startLat, startLng, endLat, endLng });
                 return { duration: 0, distance: 0 };
             }
             
-            // 🚀 캐시 키 생성 (소수점 4자리로 반올림)
             const cacheKey = `${startLat.toFixed(4)},${startLng.toFixed(4)}-${endLat.toFixed(4)},${endLng.toFixed(4)}`;
             
-            // 캐시에 있으면 즉시 반환
             if (routeCache.has(cacheKey)) {
                 return routeCache.get(cacheKey);
             }
@@ -1715,16 +1809,13 @@
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // 🔧 기본 구조 확인
                     if (data && data.routes && data.routes.length > 0) {
                         const route = data.routes[0];
                         
-                        // summary 존재 여부 확인
                         if (route.summary) {
                             const duration = route.summary.duration;
                             const distance = route.summary.distance;
                             
-                            // 값이 유효한지 확인
                             if (typeof duration === 'number' && typeof distance === 'number' && 
                                 !isNaN(duration) && !isNaN(distance)) {
                                 
@@ -1733,7 +1824,6 @@
                                     distance: distance / 1000
                                 };
                                 
-                                // 캐시에 저장
                                 routeCache.set(cacheKey, result);
                                 return result;
                             } else {
@@ -1752,20 +1842,17 @@
                 console.warn('Route API error:', error.message);
             }
             
-            // API 실패 시 직선 거리로 추정
             const distance = calculateDistance(startLat, startLng, endLat, endLng);
             const result = { 
                 duration: Math.round((distance / 40) * 60), 
                 distance 
             };
             
-            // 추정값도 캐시에 저장
             routeCache.set(cacheKey, result);
             return result;
         }
         
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            // 🔧 타입 안전성: 숫자로 변환
             lat1 = parseFloat(lat1);
             lon1 = parseFloat(lon1);
             lat2 = parseFloat(lat2);
@@ -1792,7 +1879,6 @@
                 const totalDistance = day.visits.reduce((s, v) => s + parseFloat(v.distance), 0);
                 const travelTime = day.visits.reduce((s, v) => s + parseFloat(v.travelTime), 0);
                 const avgStay = parseInt(document.getElementById('avgStay').value);
-                // 수정: departureTime 제거 (첫 방문지의 travelTime에 이미 포함됨)
                 const totalTime = travelTime + (day.returnTime || 0) + (day.visits.length * avgStay);
                 const color = dayColors[(day.day - 1) % dayColors.length];
                 
@@ -1868,7 +1954,6 @@
         function displayMarkersOnMap(schedule, start) {
             if (!map) return;
             
-            // 기존 마커 제거
             markers.forEach(marker => {
                 try {
                     if (marker && marker.setMap) {
@@ -1882,7 +1967,6 @@
             
             const bounds = new kakao.maps.LatLngBounds();
             
-            // 출발지 마커
             try {
                 const startPos = new kakao.maps.LatLng(parseFloat(start.y), parseFloat(start.x));
                 const startMarker = new kakao.maps.Marker({
@@ -1904,7 +1988,6 @@
                 console.error('출발지 마커 생성 오류:', e);
             }
             
-            // 방문지 마커 및 경로선
             schedule.forEach((day) => {
                 const color = dayColors[(day.day - 1) % dayColors.length];
                 
@@ -1920,7 +2003,6 @@
                         
                         const position = new kakao.maps.LatLng(lat, lng);
                         
-                        // 경로선 그리기
                         if (visitIndex > 0) {
                             const prevVisit = day.visits[visitIndex - 1];
                             const prevLat = parseFloat(prevVisit.lat);
@@ -1941,7 +2023,6 @@
                             }
                         }
                         
-                        // 🎨 색상 있는 커스텀 마커 생성
                         const markerContent = document.createElement('div');
                         markerContent.style.cssText = `
                             width: 36px;
@@ -1961,7 +2042,6 @@
                         `;
                         markerContent.textContent = visitIndex + 1;
                         
-                        // 커스텀 오버레이 생성
                         const customOverlay = new kakao.maps.CustomOverlay({
                             position: position,
                             content: markerContent,
@@ -1971,7 +2051,6 @@
                         
                         customOverlay.setMap(map);
                         
-                        // 인포윈도우 생성
                         const infoContent = visit.company 
                             ? `<div style="padding:8px;font-size:12px;min-width:150px;">
                                 <strong style="color:${color};">${day.day}일차-${visitIndex + 1}</strong><br>
@@ -1990,16 +2069,13 @@
                             removable: false
                         });
                         
-                        // 마커 클릭 이벤트
                         markerContent.addEventListener('click', function() {
-                            // 기존 열린 인포윈도우 모두 닫기
                             markers.forEach(m => {
                                 if (m.infowindow && m.infowindow.close) {
                                     m.infowindow.close();
                                 }
                             });
                             
-                            // 임시 마커 위치 생성 (인포윈도우 표시용)
                             const tempMarker = new kakao.maps.Marker({
                                 position: position,
                                 map: null
@@ -2007,7 +2083,6 @@
                             
                             infowindow.open(map, tempMarker);
                             
-                            // 3초 후 자동 닫기
                             setTimeout(() => {
                                 infowindow.close();
                             }, 3000);
@@ -2029,7 +2104,6 @@
                 });
             });
             
-            // 지도 범위 조정
             try {
                 map.setBounds(bounds);
             } catch (e) {
@@ -2044,24 +2118,19 @@
             console.log(`convertedData 행 수: ${convertedData.length} (헤더 포함)`);
             console.log(`데이터 행 수: ${convertedData.length - 1}`);
             
-            // Sheet1: 원본 데이터 복사 (행 순서 유지)
             const scheduleData = convertedData.map(row => [...row]);
             
-            // 헤더에 "일정" 열 추가
             scheduleData[0].push('일정');
             
-            // 일정 매핑 생성
             const scheduleMap = new Map();
-            const usedRows = new Set();  // 이미 사용된 행 추적
+            const usedRows = new Set();
             let totalScheduledVisits = 0;
             
             finalSchedule.forEach(day => {
                 day.visits.forEach((visit, idx) => {
                     totalScheduledVisits++;
                     
-                    // 원본 데이터의 행 번호 찾기 (위도/경도로 매칭, 아직 사용되지 않은 행만)
                     for (let i = 1; i < convertedData.length; i++) {
-                        // 이미 사용된 행은 스킵
                         if (usedRows.has(i)) continue;
                         
                         const row = convertedData[i];
@@ -2075,7 +2144,7 @@
                             
                             const scheduleLabel = `Day${day.day}-${idx + 1}`;
                             scheduleMap.set(i, scheduleLabel);
-                            usedRows.add(i);  // 사용된 행으로 표시
+                            usedRows.add(i);
                             console.log(`  매칭: 행${i} → ${scheduleLabel} (${visit.address?.substring(0, 30)}...)`);
                             break;
                         }
@@ -2090,7 +2159,6 @@
                 console.warn(`⚠️ 매칭 누락: ${totalScheduledVisits - scheduleMap.size}개`);
             }
             
-            // 원본 순서대로 일정 정보 추가
             let addedCount = 0;
             for (let i = 1; i < scheduleData.length; i++) {
                 const scheduleLabel = scheduleMap.get(i) || '';
@@ -2103,16 +2171,12 @@
             console.log(`일정이 추가된 행: ${addedCount}개`);
             console.log(`처리된 전체 행: ${scheduleData.length - 1}개 (헤더 제외)`);
             
-            // Sheet2: 일정 순서대로 정렬된 데이터
             const sortedData = [];
             
-            // 헤더 추가
             sortedData.push([...scheduleData[0]]);
             
-            // 각 날짜별로 방문 순서대로 데이터 추가
             finalSchedule.forEach(day => {
                 day.visits.forEach((visit, idx) => {
-                    // 원본 데이터에서 매칭되는 행 찾기
                     for (let i = 1; i < scheduleData.length; i++) {
                         const scheduleLabel = scheduleData[i][scheduleData[i].length - 1];
                         if (scheduleLabel === `Day${day.day}-${idx + 1}`) {
@@ -2125,14 +2189,11 @@
             
             console.log(`\nSheet2 생성: ${sortedData.length - 1}개 행 (헤더 제외)`);
             
-            // 엑셀 파일 생성
             const wb = XLSX.utils.book_new();
             
-            // Sheet1: 원본 순서
             const ws1 = XLSX.utils.aoa_to_sheet(scheduleData);
             XLSX.utils.book_append_sheet(wb, ws1, '원본순서');
             
-            // Sheet2: 일정 순서
             const ws2 = XLSX.utils.aoa_to_sheet(sortedData);
             XLSX.utils.book_append_sheet(wb, ws2, '일정순서');
             

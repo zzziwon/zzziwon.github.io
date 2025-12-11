@@ -356,21 +356,18 @@
             color: #999;
         }
         
-        #optimizeStatus {
+        #optimizeStatus { 
             padding: 12px;
             background: #d1fae5;
             border-radius: 8px;
-            margin-top: 12px;
             margin-bottom: 12px;
             border-left: 4px solid #a0e65f;
             font-size: 0.9em;
             font-weight: 600;
-            height: 55px;
+            min-height: 55px;
             display: flex;
-            flex-direction: column;
-            gap: 5px;
-            align-items: flex-start;
-            justify-content: flex-start;
+            align-items: center;
+            justify-content: center;
         }
         
         #optimizeStatus.empty {
@@ -1452,10 +1449,11 @@
             let currentPosition = start;
             let totalProcessed = 0;
             
-            const maxMinutes = (maxHours + 0.3) * 60;
+            // ✅ 수정: 0.3시간 여유 제거
+            const maxMinutes = maxHours * 60;
             
             console.log(`\n🎯 === 그룹별 Greedy 최적화 시작 ===`);
-            console.log(`일일 최대 업무시간: ${maxHours}시간 + 0.3시간 = ${(maxHours + 0.3).toFixed(1)}시간 (${maxMinutes.toFixed(0)}분)`);
+            console.log(`일일 최대 업무시간: ${maxHours}시간 (${maxMinutes}분)`);
             console.log(`평균 체류시간: ${avgStay}분`);
             console.log(`일일 최대 방문: ${maxVisits}개`);
             
@@ -1470,17 +1468,12 @@
                 statusEl.innerHTML = `<div class="optimize-main">${group.name} 처리 중 (${groupIdx + 1}/${orderedGroups.length})</div><div class="optimize-detail">준비 중...</div>`;
                 
                 while (remainingInGroup.length > 0) {
+                    // 현재까지 총 업무시간 계산 (방문간 이동 + 체류)
                     const currentTime = currentDayVisits.reduce((s, v) => s + parseFloat(v.time), 0);
-                    const remainTime = maxMinutes - currentTime;
                     
-                    // 시간 부족 또는 방문 수 초과 시 다음 날로
-                    if ((remainTime < avgStay || currentDayVisits.length >= maxVisits) && currentDayVisits.length > 0) {
-                        if (remainTime < avgStay) {
-                            console.log(`  ⏰ 시간 부족, 다음 날로`);
-                        }
-                        if (currentDayVisits.length >= maxVisits) {
-                            console.log(`  📊 방문 수 ${currentDayVisits.length}개 도달, 다음 날로`);
-                        }
+                    // 방문 수 초과 시 다음 날로
+                    if (currentDayVisits.length >= maxVisits && currentDayVisits.length > 0) {
+                        console.log(`  📊 방문 수 ${currentDayVisits.length}개 도달, 다음 날로`);
                         
                         const firstVisit = currentDayVisits[0];
                         const lastVisit = currentDayVisits[currentDayVisits.length - 1];
@@ -1506,8 +1499,8 @@
                     document.getElementById('optimizeProgressFill').style.width = progress + '%';
                     document.getElementById('optimizeProgressFill').textContent = progress + '%';
                     
-                    const statusEl = document.getElementById('optimizeStatus');
-                    statusEl.innerHTML = `<div class="optimize-main">${group.name} 처리 중 (${groupIdx + 1}/${orderedGroups.length})</div><div class="optimize-detail">${totalProcessed}/${totalCount}개 완료 | ${group.name} 내 ${remainingInGroup.length}개 남음</div>`;
+                    const statusEl2 = document.getElementById('optimizeStatus');
+                    statusEl2.innerHTML = `<div class="optimize-main">${group.name} 처리 중 (${groupIdx + 1}/${orderedGroups.length})</div><div class="optimize-detail">${totalProcessed}/${totalCount}개 완료 | ${group.name} 내 ${remainingInGroup.length}개 남음</div>`;
                     
                     const candidates = remainingInGroup
                         .map((loc, idx) => {
@@ -1564,7 +1557,27 @@
                     const lng = parseFloat(nearest[nearest.length - 1]);
                     
                     const estimatedTime = minDuration + avgStay;
-                    const newTotalTime = currentTime + estimatedTime;
+                    
+                    // ✅ 수정: 다음 방문 추가 시 전체 업무시간 체크
+                    let projectedDepartureTime = 0;
+                    let projectedReturnTime = 0;
+                    
+                    if (currentDayVisits.length === 0) {
+                        // 첫 방문지인 경우
+                        const toFirst = await getKakaoRoute(start.y, start.x, lat, lng);
+                        projectedDepartureTime = toFirst.duration;
+                    } else {
+                        // 이미 방문지가 있는 경우
+                        const firstVisit = currentDayVisits[0];
+                        const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
+                        projectedDepartureTime = toFirst.duration;
+                    }
+                    
+                    // 복귀 시간 계산
+                    const toStart = await getKakaoRoute(lat, lng, start.y, start.x);
+                    projectedReturnTime = toStart.duration;
+                    
+                    const projectedTotalTime = projectedDepartureTime + currentTime + estimatedTime + projectedReturnTime;
                     
                     if (nearestDistance > 20 && currentDayVisits.length > 0) {
                         console.log(`  📏 거리 초과, 다음 날로`);
@@ -1573,13 +1586,13 @@
                         const lastVisit = currentDayVisits[currentDayVisits.length - 1];
                         
                         const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
-                        const toStart = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
+                        const toStart2 = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
                         
                         schedule.push({
                             day: currentDay,
                             visits: currentDayVisits,
                             departureTime: toFirst.duration,
-                            returnTime: toStart.duration
+                            returnTime: toStart2.duration
                         });
                         
                         currentDay++;
@@ -1588,20 +1601,21 @@
                         continue;
                     }
                     
-                    if (newTotalTime > maxMinutes && currentDayVisits.length > 0) {
-                        console.log(`  ⏰ 시간 초과, 다음 날로`);
+                    // ✅ 수정: 전체 업무시간이 최대시간을 초과하는지 체크
+                    if (projectedTotalTime > maxMinutes && currentDayVisits.length > 0) {
+                        console.log(`  ⏰ 전체 업무시간 초과 (${(projectedTotalTime/60).toFixed(1)}시간 > ${maxHours}시간), 다음 날로`);
                         
                         const firstVisit = currentDayVisits[0];
                         const lastVisit = currentDayVisits[currentDayVisits.length - 1];
                         
                         const toFirst = await getKakaoRoute(start.y, start.x, firstVisit.lat, firstVisit.lng);
-                        const toStart = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
+                        const toStart2 = await getKakaoRoute(lastVisit.lat, lastVisit.lng, start.y, start.x);
                         
                         schedule.push({
                             day: currentDay,
                             visits: currentDayVisits,
                             departureTime: toFirst.duration,
-                            returnTime: toStart.duration
+                            returnTime: toStart2.duration
                         });
                         
                         currentDay++;
@@ -1654,13 +1668,15 @@
             }
             
             console.log(`\n🔄 === 일정 재조정 시작 ===`);
-            schedule = await rebalanceSchedule(schedule, maxVisits, start);
+            schedule = await rebalanceSchedule(schedule, maxVisits, start, maxHours);
             
             return schedule;
         }
         
-        async function rebalanceSchedule(schedule, maxVisits, start) {
+        async function rebalanceSchedule(schedule, maxVisits, start, maxHours) {
             const threshold = Math.floor(maxVisits * 0.5);
+            const maxMinutes = maxHours * 60;
+            
             console.log(`\n🔄 === 일정 재조정 시작 ===`);
             console.log(`재조정 기준: ${threshold}개 이하`);
             console.log(`현재 일정: ${schedule.length}일`);
@@ -1706,6 +1722,18 @@
                         
                         if (targetDay.visits.length + sourceDay.visits.length > maxVisits) {
                             console.log(`    ⏭️ ${targetDay.day}일차: 용량 초과`);
+                            continue;
+                        }
+                        
+                        // ✅ 추가: 병합 후 총 업무시간 체크
+                        const avgStay = parseInt(document.getElementById('avgStay').value);
+                        const mergedVisits = [...targetDay.visits, ...sourceDay.visits];
+                        const totalTravelTime = mergedVisits.reduce((s, v) => s + parseFloat(v.travelTime), 0);
+                        const totalStayTime = mergedVisits.length * avgStay;
+                        const estimatedTotalTime = targetDay.departureTime + totalTravelTime + totalStayTime + targetDay.returnTime;
+                        
+                        if (estimatedTotalTime > maxMinutes) {
+                            console.log(`    ⏰ ${targetDay.day}일차: 병합 시 시간 초과 (${(estimatedTotalTime/60).toFixed(1)}시간)`);
                             continue;
                         }
                         
@@ -1769,9 +1797,15 @@
             console.log(`\n✅ 재조정 완료: ${schedule.length}일 일정`);
             console.log(`📊 캐시 히트: ${routeCache.size}개 경로 저장됨`);
             
-            console.log('\n📋 최종 일정:');
+            console.log('\n📋 최종 일정 (시간 검증):');
             schedule.forEach(day => {
-                console.log(`  ${day.day}일차: ${day.visits.length}개 방문`);
+                const avgStay = parseInt(document.getElementById('avgStay').value);
+                const totalTime = day.departureTime + 
+                                 day.visits.reduce((s, v) => s + parseFloat(v.travelTime), 0) + 
+                                 (day.visits.length * avgStay) + 
+                                 day.returnTime;
+                const status = totalTime > maxMinutes ? '⚠️초과' : '✅정상';
+                console.log(`  ${day.day}일차: ${day.visits.length}개 방문, 총 ${(totalTime/60).toFixed(1)}시간 ${status}`);
             });
             
             return schedule;
@@ -1948,7 +1982,7 @@
                 const totalDistance = day.visits.reduce((s, v) => s + parseFloat(v.distance), 0);
                 const travelTime = day.visits.reduce((s, v) => s + parseFloat(v.travelTime), 0);
                 const avgStay = parseInt(document.getElementById('avgStay').value);
-                const totalTime = travelTime + (day.returnTime || 0) + (day.visits.length * avgStay);
+                const totalTime = day.departureTime + travelTime + (day.visits.length * avgStay) + day.returnTime;
                 const color = dayColors[(day.day - 1) % dayColors.length];
                 
                 html += `
@@ -1970,7 +2004,7 @@
                             </div>
                             <div class="stat-card">
                                 <div class="label">이동 시간</div>
-                                <div class="value">${Math.round(travelTime)}분</div>
+                                <div class="value">${Math.round(travelTime + day.departureTime + day.returnTime)}분</div>
                             </div>
                             <div class="stat-card">
                                 <div class="label">총 소요시간</div>

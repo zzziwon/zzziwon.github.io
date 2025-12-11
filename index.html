@@ -344,10 +344,12 @@
             border-left: 4px solid #a0e65f;
             font-size: 0.9em;
             font-weight: 600;
+            color: #155724;
             min-height: 55px;
             display: flex;
             align-items: center;
             justify-content: center;
+            
         }
         
         #currentAddress.empty {
@@ -364,6 +366,7 @@
             border-left: 4px solid #a0e65f;
             font-size: 0.9em;
             font-weight: 600;
+            color: #155724;
             min-height: 55px;
             display: flex;
             align-items: center;
@@ -1500,8 +1503,8 @@
                     document.getElementById('optimizeProgressFill').textContent = progress + '%';
                     
                     const statusEl2 = document.getElementById('optimizeStatus');
-                    statusEl2.innerHTML = `<div class="optimize-main">${group.name} 처리 중 (${groupIdx + 1}/${orderedGroups.length})</div><div class="optimize-detail">${totalProcessed}/${totalCount}개 완료 | ${group.name} 내 ${remainingInGroup.length}개 남음</div>`;
-                    
+                    statusEl2.innerHTML = `<div class="optimize-main">${totalProcessed}/${totalCount}개 완료</div>`;
+
                     const candidates = remainingInGroup
                         .map((loc, idx) => {
                             const lat = parseFloat(loc[loc.length - 2]);

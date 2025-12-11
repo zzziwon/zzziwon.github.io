@@ -952,15 +952,70 @@
         function handleFile(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
-                
-                uploadedData = jsonData.filter(row => row.length > 0);
-                showStatus('uploadStatus', `✅ ${uploadedData.length}개 행 업로드 완료`, 'success');
-                showColumnSelector();
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    
+                    // 여러 옵션으로 시도
+                    let workbook = null;
+                    let jsonData = null;
+                    
+                    // 시도 1: 기본 읽기
+                    try {
+                        workbook = XLSX.read(data, {type: 'array'});
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1, defval: '', raw: false});
+                    } catch (e1) {
+                        console.log('기본 읽기 실패, 다른 방법 시도...');
+                        
+                        // 시도 2: cellDates 옵션 사용
+                        try {
+                            workbook = XLSX.read(data, {type: 'array', cellDates: true, cellNF: false, cellText: false});
+                            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                            jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1, defval: '', raw: false});
+                        } catch (e2) {
+                            console.log('cellDates 옵션 실패, 세 번째 방법 시도...');
+                            
+                            // 시도 3: binary 타입으로 읽기
+                            try {
+                                const binary = new TextDecoder('latin1').decode(data);
+                                workbook = XLSX.read(binary, {type: 'binary'});
+                                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                                jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1, defval: '', raw: false});
+                            } catch (e3) {
+                                throw new Error('파일을 읽을 수 없습니다. 파일이 손상되었거나 지원되지 않는 형식입니다.');
+                            }
+                        }
+                    }
+                    
+                    if (!jsonData || jsonData.length === 0) {
+                        throw new Error('파일에 데이터가 없습니다.');
+                    }
+                    
+                    // 빈 행 필터링
+                    uploadedData = jsonData.filter(row => {
+                        if (!row || row.length === 0) return false;
+                        // 모든 셀이 빈 값인지 확인
+                        return row.some(cell => cell !== null && cell !== undefined && cell !== '');
+                    });
+                    
+                    if (uploadedData.length === 0) {
+                        throw new Error('유효한 데이터가 없습니다.');
+                    }
+                    
+                    showStatus('uploadStatus', `✅ ${uploadedData.length}개 행 업로드 완료`, 'success');
+                    showColumnSelector();
+                    
+                } catch (error) {
+                    console.error('파일 읽기 오류:', error);
+                    showStatus('uploadStatus', `❌ 파일 읽기 실패: ${error.message}`, 'error');
+                    uploadedData = [];
+                }
             };
+            
+            reader.onerror = function() {
+                showStatus('uploadStatus', '❌ 파일을 읽는 중 오류가 발생했습니다.', 'error');
+            };
+            
             reader.readAsArrayBuffer(file);
         }
         
